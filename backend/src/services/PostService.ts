@@ -34,26 +34,39 @@ export class PostService {
         return {...savedPost, user: safeUser}
     }
     
-    async update(data: any, userId: number, files?: Express.Multer.File[]) {
-        const user = await this.userRepo.findOneBy({id: userId})
-        if(!user) throw new Error("Usuário não encontrado")
-        const post = await this.repo.findOneBy({id: data.id})
+    async update(data: any, post:Post, files?: Express.Multer.File[]) {
+        if(files && files.length > 0) {
+            await this.imageRepo.delete({post: {id: post.id}})
+
+            const images = files.map((file, index) => 
+            this.imageRepo.create({
+                data: file.buffer,
+                mimeType: file.mimetype,
+                position: index,
+                post
+            }))
+            await this.imageRepo.save(images)
+        }
+
+        await this.repo.update({id: post.id}, {description: data.description})
+        
+        const updatedPost = await this.repo.findOne({
+            where: {id: post.id},
+            relations: {user: true, images: true}
+        })
+
+
+        const {password, cpf, ...safeUser} = updatedPost!.user
+        return {...updatedPost, user:safeUser}
+    }
+
+    async delete(id: number) {
+        const post = await this.repo.findOneBy({id})
         if(!post) throw new Error('Post não encontrado')
 
-        if(files && files.length > 0) {
-            const images = files.map((file, index) => 
-                this.imageRepo.update(post.images, {
-                    data: file.buffer,
-                    mimeType: file.mimetype,
-                    position: index,
-                    post: post
-                })
-                )
-                await this.imageRepo.save(images)
-        }
-        const newPost = await this.repo.update(post, {...post, description: data.description})
-        this.repo.save(newPost)
-        return newPost
+        await this.repo.delete(id)
+
+        return {message: 'Post deletado com sucesso!'}
     }
 
 }

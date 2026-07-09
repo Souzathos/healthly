@@ -10,7 +10,7 @@ export class Comment {
     @Column({ nullable: false, length: 500 })
     text: string
 
-    @ManyToOne(() => Post, (p) => p.comments)
+    @ManyToOne(() => Post, (p) => p.comments, {onDelete: 'CASCADE'})
     post: Post
 
     @OneToMany(() => CommentLike, (cl) => cl.comment)

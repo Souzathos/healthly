@@ -11,7 +11,7 @@ export class CommentLike {
     @ManyToOne(() => User, (u) => u.commentLikes)
     user: User
 
-    @ManyToOne(() => Comment, (c) => c.likes)
+    @ManyToOne(() => Comment, (c) => c.likes, {onDelete: 'CASCADE'})
     comment: Comment
 
     @CreateDateColumn()
