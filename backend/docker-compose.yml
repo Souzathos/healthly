@@ -1,0 +1,43 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: healthly-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: healthly-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Dentro da rede do compose, o banco é acessível pelo nome do serviço "db"
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      PORT: ${PORT}
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  mysql_data:

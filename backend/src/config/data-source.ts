@@ -6,6 +6,8 @@ import { Post } from "../models/Post";
 import {Like} from '../models/Like'
 import { Comment } from "../models/Comment";
 import { PostMedia } from "../models/PostMedia";
+import { SavedPost } from "../models/SavedPost";
+import { Follow } from "../models/Follow";
 
 dotenv.config()
 export const AppDataSource = new DataSource({
@@ -15,7 +17,7 @@ export const AppDataSource = new DataSource({
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    entities: [User, Comment, CommentLike, Like, Post, PostMedia],
+    entities: [User, Comment, CommentLike, Like, Post, PostMedia, SavedPost, Follow],
     synchronize: true,
     logging: false
 })

@@ -20,6 +20,6 @@ export function authMiddleware(req:Request, res:Response, next:NextFunction) {
         return res.status(401).json({message: 'Token inválido ou expirado'})
     }
 
-    (req as any).user = {id: decoded.id, email: decoded.email}
+    req.user = {id: decoded.id, email: decoded.email}
     return next()
 }

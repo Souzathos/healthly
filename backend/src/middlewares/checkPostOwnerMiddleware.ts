@@ -22,5 +22,6 @@ export async function checkPostOwnerMiddleware(req:Request, res:Response, next: 
         return res.status(403).json({message: 'Você não tem permissão para alterar esse post.'})
     }
 
+    req.post = post
     return next()
 }

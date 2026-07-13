@@ -1,8 +1,9 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "./User";
 import { Comment } from "./Comment";
 import { Like } from "./Like";
 import { PostMedia } from "./PostMedia";
+import { SavedPost } from "./SavedPost";
 
 @Entity('posts')
 export class Post {
@@ -23,4 +24,10 @@ export class Post {
 
     @OneToMany(() => Like, (l) => l.post)
     likes: Like[]
+
+    @OneToMany(() => SavedPost, (s) => s.post)
+    savedBy: SavedPost[]
+
+    @CreateDateColumn()
+    createdAt: Date
 }
