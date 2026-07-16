@@ -23,6 +23,15 @@ export class User {
     @Column({ nullable: false, unique: true, length: 14 })
     cpf: string
 
+    @Column({ nullable: true, unique: true, length: 50 })
+    handle: string
+
+    @Column({ nullable: true, length: 255 })
+    bio: string
+
+    @Column({ nullable: true, length: 100 })
+    goal: string
+
     @OneToMany(() => Post, (p) => p.user)
     posts: Post[]
 

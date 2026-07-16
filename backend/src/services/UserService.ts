@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt'
 import { AppDataSource } from "../config/data-source";
 import { User } from "../models/User";
 import { Post } from "../models/Post";
@@ -40,5 +41,34 @@ export class UserService {
                 commentsCount: p.commentIds ? p.commentIds.length : 0
             }))
         }
+    }
+
+    async update(id: number, data: any) {
+        const user = await this.repo.findOneBy({id})
+        if(!user) throw new Error('Usuário não encontrado')
+
+        if(data.handle && data.handle !== user.handle) {
+            const handleExists = await this.repo.findOneBy({handle: data.handle})
+            if(handleExists) throw new Error('@usuário já está em uso')
+        }
+
+        const allowed: any = {}
+        if(data.name !== undefined) allowed.name = data.name
+        if(data.handle !== undefined) allowed.handle = data.handle
+        if(data.bio !== undefined) allowed.bio = data.bio
+        if(data.goal !== undefined) allowed.goal = data.goal
+        if(data.password) allowed.password = await bcrypt.hash(data.password, 10)
+
+        this.repo.merge(user, allowed)
+        const saved = await this.repo.save(user)
+        return sanitizeUser(saved)
+    }
+
+    async delete(id: number) {
+        const user = await this.repo.findOneBy({id})
+        if(!user) throw new Error('Usuário não encontrado')
+
+        await this.repo.delete(id)
+        return {message: 'Conta excluída com sucesso!'}
     }
 }

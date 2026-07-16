@@ -16,7 +16,7 @@ export class Post {
     @OneToMany(() => PostMedia, (img) => img.post)
     images: PostMedia[]
     
-    @ManyToOne(() => User, (u) => u.posts)
+    @ManyToOne(() => User, (u) => u.posts, { onDelete: 'CASCADE' })
     user: User
 
     @OneToMany(() => Comment, (c) => c.post)
