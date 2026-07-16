@@ -5,7 +5,6 @@ import {
   TextInput,
   Pressable,
   Image,
-  Alert,
   ScrollView,
   ActivityIndicator,
 } from "react-native";
@@ -17,6 +16,7 @@ import { Icon } from "../components/Icon";
 import { useAuth } from "../context/AuthContext";
 import { createPost } from "../services/posts";
 import { apiError } from "../services/api";
+import { notify } from "../utils/alerts";
 import { colors } from "../theme/colors";
 
 const MAX = 280;
@@ -32,7 +32,7 @@ export const CreatePostPage = () => {
   const pickImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permissão", "Precisamos de acesso às suas fotos.");
+      notify("Permissão", "Precisamos de acesso às suas fotos.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -62,7 +62,7 @@ export const CreatePostPage = () => {
       await createPost(text.trim(), images);
       navigation.goBack();
     } catch (e) {
-      Alert.alert("Erro ao postar", apiError(e));
+      notify("Erro ao postar", apiError(e));
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Pressable,
-  Alert,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -12,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
 import { Icon } from "../components/Icon";
+import { FormError } from "../components/FormError";
 import { useAuth } from "../context/AuthContext";
 import { apiError } from "../services/api";
 
@@ -34,6 +34,7 @@ export const SignupPage = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [cpf, setCpf] = useState("");
   const [goal, setGoal] = useState(null);
+  const [error, setError] = useState("");
 
   const titles = ["Crie sua conta", "Acesso seguro", "Seu objetivo"];
 
@@ -49,8 +50,9 @@ export const SignupPage = ({ navigation }) => {
   };
 
   const handleNext = async () => {
+    setError("");
     if (!canAdvance()) {
-      Alert.alert("Atenção", "Preencha os campos corretamente para continuar.");
+      setError("Preencha os campos corretamente para continuar.");
       return;
     }
     if (step < 2) {
@@ -68,7 +70,7 @@ export const SignupPage = ({ navigation }) => {
         goal: goal || undefined,
       });
     } catch (e) {
-      Alert.alert("Erro no cadastro", apiError(e));
+      setError(apiError(e));
     } finally {
       setLoading(false);
     }
@@ -179,7 +181,8 @@ export const SignupPage = ({ navigation }) => {
           )}
         </ScrollView>
 
-        <View className="pb-4">
+        <View className="pb-4 gap-3">
+          <FormError message={error} />
           <Button
             label={step < 2 ? "Continuar" : "Criar conta 🎉"}
             onPress={handleNext}

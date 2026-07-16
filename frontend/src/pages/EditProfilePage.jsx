@@ -3,8 +3,6 @@ import {
   View,
   Text,
   Pressable,
-  Alert,
-  Platform,
   ScrollView,
   ActivityIndicator,
 } from "react-native";
@@ -13,9 +11,11 @@ import { useNavigation } from "@react-navigation/native";
 import { Input } from "../components/Input";
 import { Icon } from "../components/Icon";
 import { Avatar } from "../components/Avatar";
+import { FormError } from "../components/FormError";
 import { useAuth } from "../context/AuthContext";
 import { updateUser, deleteAccount } from "../services/users";
 import { apiError } from "../services/api";
+import { notify, confirmAction } from "../utils/alerts";
 import { colors } from "../theme/colors";
 
 export const EditProfilePage = () => {
@@ -28,10 +28,12 @@ export const EditProfilePage = () => {
   const [goal, setGoal] = useState(user?.goal || "");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const save = async () => {
+    setError("");
     if (name.trim().length < 3) {
-      Alert.alert("Atenção", "O nome deve ter ao menos 3 caracteres.");
+      setError("O nome deve ter ao menos 3 caracteres.");
       return;
     }
     setSaving(true);
@@ -44,10 +46,10 @@ export const EditProfilePage = () => {
         password: password || undefined,
       });
       setUser({ ...user, ...updated });
-      Alert.alert("Pronto!", "Perfil atualizado com sucesso.");
+      notify("Pronto!", "Perfil atualizado com sucesso.");
       navigation.goBack();
     } catch (e) {
-      Alert.alert("Erro", apiError(e));
+      setError(apiError(e));
     } finally {
       setSaving(false);
     }
@@ -58,21 +60,17 @@ export const EditProfilePage = () => {
       await deleteAccount();
       await signOut();
     } catch (e) {
-      Alert.alert("Erro", apiError(e));
+      setError(apiError(e));
     }
   };
 
   const confirmDelete = () => {
-    const msg = "Esta ação é permanente e apaga seus posts. Deseja continuar?";
-    // No web o Alert.alert do RN não dispara os callbacks dos botões; usa window.confirm.
-    if (Platform.OS === "web") {
-      if (window.confirm(`Excluir conta\n\n${msg}`)) doDelete();
-      return;
-    }
-    Alert.alert("Excluir conta", msg, [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Excluir", style: "destructive", onPress: doDelete },
-    ]);
+    confirmAction(
+      "Excluir conta",
+      "Esta ação é permanente e apaga seus posts. Deseja continuar?",
+      doDelete,
+      "Excluir"
+    );
   };
 
   return (
@@ -125,6 +123,7 @@ export const EditProfilePage = () => {
             onChangeText={setPassword}
             placeholder="deixe em branco para manter"
           />
+          <FormError message={error} />
         </View>
 
         <View className="mt-10 mb-8">

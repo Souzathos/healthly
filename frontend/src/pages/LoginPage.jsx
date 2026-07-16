@@ -4,13 +4,13 @@ import {
   Text,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Logo } from "../components/Logo";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
+import { FormError } from "../components/FormError";
 import { useAuth } from "../context/AuthContext";
 import { apiError } from "../services/api";
 
@@ -19,17 +19,19 @@ export const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async () => {
+    setError("");
     if (!email || !password) {
-      Alert.alert("Atenção", "Preencha email e senha.");
+      setError("Preencha email e senha.");
       return;
     }
     setLoading(true);
     try {
       await signIn(email.trim(), password);
     } catch (e) {
-      Alert.alert("Erro ao entrar", apiError(e));
+      setError(apiError(e));
     } finally {
       setLoading(false);
     }
@@ -70,6 +72,7 @@ export const LoginPage = ({ navigation }) => {
               value={password}
               onChangeText={setPassword}
             />
+            <FormError message={error} />
             <Button label="Entrar" onPress={handleLogin} loading={loading} />
 
             <View className="flex-row items-center gap-3 my-1">

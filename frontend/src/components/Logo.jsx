@@ -1,18 +1,11 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { Image } from "react-native";
 
-// Placeholder do abacate (o design usa assets/logo.png)
+// Logo do app (abacate fitness). Usada no Splash, Login e header da Home.
 export const Logo = ({ size = 36 }) => (
-  <View
-    style={{
-      width: size,
-      height: size,
-      borderRadius: size * 0.28,
-      backgroundColor: "rgba(200,245,58,0.14)",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-  >
-    <Text style={{ fontSize: size * 0.55 }}>🥑</Text>
-  </View>
+  <Image
+    source={require("../../assets/logo.png")}
+    style={{ width: size, height: size }}
+    resizeMode="contain"
+  />
 );
