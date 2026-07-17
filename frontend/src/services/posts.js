@@ -12,8 +12,8 @@ export function getUserPosts(userId) {
   return api(`/post/user/${userId}`);
 }
 
-export function getLikedPosts(userId) {
-  return api(`/post/liked/${userId}`);
+export function getLikedPosts() {
+  return api("/post/liked");
 }
 
 export function createPost(description, images) {

@@ -63,7 +63,7 @@ export const ProfilePage = () => {
     if (next === "curtidas" && liked === null) {
       setTabLoading(true);
       try {
-        setLiked(await getLikedPosts(profile.id));
+        setLiked(await getLikedPosts());
       } finally {
         setTabLoading(false);
       }
@@ -93,8 +93,12 @@ export const ProfilePage = () => {
 
   const tabs = [
     { key: "posts", label: "Posts" },
-    { key: "curtidas", label: "Curtidas" },
-    ...(isOwn ? [{ key: "salvos", label: "Salvos" }] : []),
+    ...(isOwn
+      ? [
+          { key: "curtidas", label: "Curtidas" },
+          { key: "salvos", label: "Salvos" },
+        ]
+      : []),
   ];
 
   const currentList =

@@ -53,8 +53,7 @@ export class PostController {
 
     async likedByUser(req:Request, res:Response) {
         try {
-            const userId = Number(req.params.userId)
-            const posts = await this.service.getLikedByUser(userId, req.user?.id)
+            const posts = await this.service.getLikedByUser(req.user!.id)
 
             return res.status(200).json(posts)
         } catch(e: any) {

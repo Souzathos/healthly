@@ -157,13 +157,13 @@ export class PostService {
         return posts.map((p: any) => this.format(p, liked, saved))
     }
 
-    async getLikedByUser(userId: number, viewerId?: number) {
+    async getLikedByUser(userId: number) {
         const posts = await this.baseQuery()
             .innerJoin('post.likes', 'likeFilter', 'likeFilter.userId = :userId', {userId})
             .orderBy('likeFilter.createdAt', 'DESC')
             .getMany()
 
-        const {liked, saved} = await this.viewerSets(posts, viewerId)
+        const {liked, saved} = await this.viewerSets(posts, userId)
         return posts.map((p: any) => this.format(p, liked, saved))
     }
 

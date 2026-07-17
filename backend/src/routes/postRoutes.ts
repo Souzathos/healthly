@@ -15,7 +15,7 @@ const upload = multer({storage: multer.memoryStorage()})
 // Rotas de leitura (as específicas vêm antes de /:id para não haver conflito)
 postRoutes.get('/feed', authMiddleware, post.feed.bind(post))
 postRoutes.get('/media/:mediaId', post.getMedia.bind(post))
-postRoutes.get('/liked/:userId', optionalAuthMiddleware, post.likedByUser.bind(post))
+postRoutes.get('/liked', authMiddleware, post.likedByUser.bind(post))
 postRoutes.get('/user/:userId', optionalAuthMiddleware, post.getByUser.bind(post))
 postRoutes.get('/:id', optionalAuthMiddleware, post.getById.bind(post))
 
