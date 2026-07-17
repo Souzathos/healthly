@@ -32,7 +32,7 @@ export class PostController {
     async getById(req:Request, res:Response) {
         try {
             const id = Number(req.params.id)
-            const post = await this.service.getById(id)
+            const post = await this.service.getById(id, req.user?.id)
 
             return res.status(200).json(post)
         } catch(e: any) {
@@ -43,7 +43,18 @@ export class PostController {
     async getByUser(req:Request, res:Response) {
         try {
             const userId = Number(req.params.userId)
-            const posts = await this.service.getByUser(userId)
+            const posts = await this.service.getByUser(userId, req.user?.id)
+
+            return res.status(200).json(posts)
+        } catch(e: any) {
+            return res.status(400).json({message: e.message})
+        }
+    }
+
+    async likedByUser(req:Request, res:Response) {
+        try {
+            const userId = Number(req.params.userId)
+            const posts = await this.service.getLikedByUser(userId, req.user?.id)
 
             return res.status(200).json(posts)
         } catch(e: any) {

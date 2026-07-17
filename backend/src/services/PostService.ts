@@ -3,6 +3,9 @@ import { Post } from "../models/Post";
 import { PostMedia } from "../models/PostMedia";
 import { User } from "../models/User";
 import { Follow } from "../models/Follow";
+import { Like } from "../models/Like";
+import { SavedPost } from "../models/SavedPost";
+import { In } from "typeorm";
 import { sanitizeUser } from "../utils/sanitizeUser";
 
 const PAGE_SIZE = 10
@@ -12,6 +15,8 @@ export class PostService {
     private userRepo = AppDataSource.getRepository(User)
     private imageRepo = AppDataSource.getRepository(PostMedia)
     private followRepo = AppDataSource.getRepository(Follow)
+    private likeRepo = AppDataSource.getRepository(Like)
+    private savedRepo = AppDataSource.getRepository(SavedPost)
 
     // Monta a query base de leitura: autor + mídias (só metadados, sem o blob) + ids p/ contagem
     private baseQuery() {
@@ -23,7 +28,28 @@ export class PostService {
             .loadRelationIdAndMap('post.commentIds', 'post.comments')
     }
 
-    private format(post: any) {
+    private async viewerSets(posts: any[], viewerId?: number) {
+        const empty = {liked: new Set<number>(), saved: new Set<number>()}
+        if(!viewerId || posts.length === 0) return empty
+
+        const postIds = posts.map(p => p.id)
+
+        const likes = await this.likeRepo.find({
+            where: {user: {id: viewerId}, post: {id: In(postIds)}},
+            relations: {post: true}
+        })
+        const saved = await this.savedRepo.find({
+            where: {user: {id: viewerId}, post: {id: In(postIds)}},
+            relations: {post: true}
+        })
+
+        return {
+            liked: new Set(likes.map(l => l.post.id)),
+            saved: new Set(saved.map(s => s.post.id))
+        }
+    }
+
+    private format(post: any, liked?: Set<number>, saved?: Set<number>) {
         return {
             id: post.id,
             description: post.description,
@@ -31,7 +57,9 @@ export class PostService {
             createdAt: post.createdAt,
             user: post.user ? sanitizeUser(post.user) : null,
             likesCount: post.likeIds ? post.likeIds.length : 0,
-            commentsCount: post.commentIds ? post.commentIds.length : 0
+            commentsCount: post.commentIds ? post.commentIds.length : 0,
+            likedByMe: liked ? liked.has(post.id) : false,
+            savedByMe: saved ? saved.has(post.id) : false
         }
     }
 
@@ -104,28 +132,41 @@ export class PostService {
             .take(PAGE_SIZE)
             .getMany()
 
-        return posts.map((p: any) => this.format(p))
+        const {liked, saved} = await this.viewerSets(posts, userId)
+        return posts.map((p: any) => this.format(p, liked, saved))
     }
 
-    async getById(id: number) {
+    async getById(id: number, viewerId?: number) {
         const post = await this.baseQuery()
             .where('post.id = :id', {id})
             .getOne()
 
         if(!post) throw new Error('Post não encontrado')
-        return this.format(post)
+
+        const {liked, saved} = await this.viewerSets([post], viewerId)
+        return this.format(post, liked, saved)
     }
 
-    async getByUser(userId: number) {
+    async getByUser(userId: number, viewerId?: number) {
         const posts = await this.baseQuery()
             .where('post.userId = :userId', {userId})
             .orderBy('post.createdAt', 'DESC')
             .getMany()
 
-        return posts.map((p: any) => this.format(p))
+        const {liked, saved} = await this.viewerSets(posts, viewerId)
+        return posts.map((p: any) => this.format(p, liked, saved))
     }
 
-    // Retorna o binário de uma mídia para ser servido por uma rota GET
+    async getLikedByUser(userId: number, viewerId?: number) {
+        const posts = await this.baseQuery()
+            .innerJoin('post.likes', 'likeFilter', 'likeFilter.userId = :userId', {userId})
+            .orderBy('likeFilter.createdAt', 'DESC')
+            .getMany()
+
+        const {liked, saved} = await this.viewerSets(posts, viewerId)
+        return posts.map((p: any) => this.format(p, liked, saved))
+    }
+
     async getMedia(mediaId: number) {
         const media = await this.imageRepo.findOneBy({id: mediaId})
         if(!media) throw new Error('Mídia não encontrada')

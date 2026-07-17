@@ -3,6 +3,8 @@ import { View, Text, Pressable, Image } from "react-native";
 import { Avatar } from "./Avatar";
 import { Icon } from "./Icon";
 import { mediaUrl } from "../services/api";
+import { togglePostLike } from "../services/likes";
+import { toggleSaved } from "../services/saved";
 import { colors } from "../theme/colors";
 import { formatCount, timeAgo, handleFrom } from "../utils/format";
 
@@ -19,10 +21,44 @@ export const PostCard = ({
   onPressPost,
   showThreadLine = true,
 }) => {
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(!!post.likedByMe);
+  const [likesCount, setLikesCount] = useState(post.likesCount || 0);
+  const [saved, setSaved] = useState(!!post.savedByMe);
   const [reposted, setReposted] = useState(false);
+  const [busyLike, setBusyLike] = useState(false);
+  const [busySave, setBusySave] = useState(false);
   const tags = extractTags(post.description);
   const firstImage = post.images?.[0];
+
+  const onToggleLike = async () => {
+    if (busyLike) return;
+    const prev = liked;
+    setBusyLike(true);
+    setLiked(!prev);
+    setLikesCount((c) => c + (prev ? -1 : 1));
+    try {
+      await togglePostLike(post.id);
+    } catch (e) {
+      setLiked(prev);
+      setLikesCount((c) => c + (prev ? 1 : -1));
+    } finally {
+      setBusyLike(false);
+    }
+  };
+
+  const onToggleSave = async () => {
+    if (busySave) return;
+    const prev = saved;
+    setBusySave(true);
+    setSaved(!prev);
+    try {
+      await toggleSaved(post.id);
+    } catch (e) {
+      setSaved(prev);
+    } finally {
+      setBusySave(false);
+    }
+  };
 
   const actions = [
     {
@@ -42,9 +78,16 @@ export const PostCard = ({
     {
       key: "like",
       icon: liked ? "heartFill" : "heart",
-      label: formatCount(post.likesCount + (liked ? 1 : 0)),
+      label: formatCount(likesCount),
       color: liked ? colors.danger : colors.muted,
-      onPress: () => setLiked((l) => !l),
+      onPress: onToggleLike,
+    },
+    {
+      key: "save",
+      icon: "bookmark",
+      label: "",
+      color: saved ? colors.accent : colors.muted,
+      onPress: onToggleSave,
     },
   ];
 
