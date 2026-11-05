@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { PostService } from "../services/PostService";
+import { isAllowedImageType } from "../middlewares/upload";
 
 export class PostController {
     private service = new PostService()
@@ -66,7 +67,10 @@ export class PostController {
             const mediaId = Number(req.params.mediaId)
             const media = await this.service.getMedia(mediaId)
 
-            res.setHeader('Content-Type', media.mimeType)
+            // Mídias antigas podem ter um tipo que o navegador executaria, como text/html
+            const contentType = isAllowedImageType(media.mimeType) ? media.mimeType : 'application/octet-stream'
+
+            res.setHeader('Content-Type', contentType)
             return res.send(media.data)
         } catch(e: any) {
             return res.status(404).json({message: e.message})

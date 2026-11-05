@@ -33,7 +33,8 @@ export async function api(path, options = {}) {
   const data = text ? JSON.parse(text) : null;
 
   if (!res.ok) {
-    throw new Error((data && data.message) || "Erro inesperado");
+    // Erros de validação trazem o motivo por campo em data.errors.
+    throw new Error(data?.errors?.[0]?.mensagem || data?.message || "Erro inesperado");
   }
 
   return data;

@@ -1,6 +1,6 @@
 import { AppDataSource } from "../config/data-source";
 import { User } from "../models/User";
-import { sanitizeUser } from "../utils/sanitizeUser";
+import { sanitizeOwnUser } from "../utils/sanitizeUser";
 import bcrypt from 'bcrypt'
 
 export class AuthService {
@@ -23,6 +23,6 @@ export class AuthService {
         const validate = await bcrypt.compare(password, user.password)
         if (!validate) throw new Error('Credenciais inválidas')
     
-        return sanitizeUser(user)
+        return sanitizeOwnUser(user)
     }
 }

@@ -33,6 +33,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       PORT: ${PORT}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     ports:
       - "${PORT}:${PORT}"
     volumes:

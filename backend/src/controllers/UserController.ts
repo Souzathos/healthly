@@ -17,7 +17,7 @@ export class UserController {
 
     async me(req:Request, res:Response) {
         try {
-            const user = await this.service.getProfile(req.user!.id)
+            const user = await this.service.getOwnProfile(req.user!.id)
 
             return res.status(200).json(user)
         } catch(e: any) {

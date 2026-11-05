@@ -3,7 +3,7 @@ import { AppDataSource } from "../config/data-source";
 import { User } from "../models/User";
 import { Post } from "../models/Post";
 import { Follow } from "../models/Follow";
-import { sanitizeUser } from "../utils/sanitizeUser";
+import { sanitizeOwnUser, sanitizeUser } from "../utils/sanitizeUser";
 
 export class UserService {
     private repo = AppDataSource.getRepository(User)
@@ -14,6 +14,17 @@ export class UserService {
         const user = await this.repo.findOneBy({id})
         if(!user) throw new Error('Usuário não encontrado')
 
+        return {...sanitizeUser(user), ...await this.profileStats(id)}
+    }
+
+    async getOwnProfile(id: number) {
+        const user = await this.repo.findOneBy({id})
+        if(!user) throw new Error('Usuário não encontrado')
+
+        return {...sanitizeOwnUser(user), ...await this.profileStats(id)}
+    }
+
+    private async profileStats(id: number) {
         const posts = await this.postRepo.createQueryBuilder('post')
             .leftJoin('post.images', 'image')
             .addSelect(['image.id', 'image.position', 'image.mimeType'])
@@ -28,7 +39,6 @@ export class UserService {
         const followingCount = await this.followRepo.countBy({follower: {id}})
 
         return {
-            ...sanitizeUser(user),
             postsCount,
             followersCount,
             followingCount,
@@ -57,11 +67,16 @@ export class UserService {
         if(data.handle !== undefined) allowed.handle = data.handle
         if(data.bio !== undefined) allowed.bio = data.bio
         if(data.goal !== undefined) allowed.goal = data.goal
-        if(data.password) allowed.password = await bcrypt.hash(data.password, 10)
+        if(data.password) {
+            const validCurrent = await bcrypt.compare(data.currentPassword ?? '', user.password)
+            if(!validCurrent) throw new Error('Senha atual incorreta')
+
+            allowed.password = await bcrypt.hash(data.password, 10)
+        }
 
         this.repo.merge(user, allowed)
         const saved = await this.repo.save(user)
-        return sanitizeUser(saved)
+        return sanitizeOwnUser(saved)
     }
 
     async delete(id: number) {
