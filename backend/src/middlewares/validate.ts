@@ -18,3 +18,16 @@ export function validateBody(schema: ZodType) {
         return next()
     }
 }
+
+// Recusa ids de rota que não sejam inteiros positivos, como /post/abc
+export function validateIds(...names: string[]) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const valid = names.every(name => {
+            const value = String(req.params[name])
+            return /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value))
+        })
+
+        if(!valid) return res.status(400).json({message: 'Identificador inválido'})
+        return next()
+    }
+}

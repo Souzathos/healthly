@@ -1,0 +1,17 @@
+# Banco descartável para os testes: os dados ficam em memória
+services:
+  db-test:
+    image: mysql:8.0
+    container_name: healthly-db-test
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_DATABASE: healthly_test
+    ports:
+      - "33306:3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-ptest"]
+      interval: 2s
+      timeout: 5s
+      retries: 30

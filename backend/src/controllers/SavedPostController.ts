@@ -1,27 +1,19 @@
 import { Request, Response } from "express";
 import { SavedPostService } from "../services/SavedPostService";
+import { getPagination } from "../utils/pagination";
 
 export class SavedPostController {
     private service = new SavedPostService()
 
-    async toggle(req:Request, res:Response) {
-        try {
-            const postId = Number(req.params.postId)
-            const result = await this.service.toggle(postId, req.user!.id)
+    async toggle(req: Request, res: Response) {
+        const result = await this.service.toggle(Number(req.params.postId), req.user!.id)
 
-            return res.status(200).json(result)
-        } catch(e: any) {
-            return res.status(400).json({message: e.message})
-        }
+        return res.status(200).json(result)
     }
 
-    async list(req:Request, res:Response) {
-        try {
-            const posts = await this.service.listByUser(req.user!.id)
+    async list(req: Request, res: Response) {
+        const posts = await this.service.listByUser(req.user!.id, getPagination(req))
 
-            return res.status(200).json(posts)
-        } catch(e: any) {
-            return res.status(400).json({message: e.message})
-        }
+        return res.status(200).json(posts)
     }
 }

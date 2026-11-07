@@ -1,5 +1,5 @@
 import { DataSource } from "typeorm";
-import * as dotenv from 'dotenv'
+import { env } from "./env";
 import { User } from "../models/User";
 import { CommentLike } from "../models/CommentLike";
 import { Post } from "../models/Post";
@@ -8,16 +8,19 @@ import { Comment } from "../models/Comment";
 import { PostMedia } from "../models/PostMedia";
 import { SavedPost } from "../models/SavedPost";
 import { Follow } from "../models/Follow";
+import { InitialSchema1793919422850 } from "../migrations/1793919422850-InitialSchema";
 
-dotenv.config()
+
 export const AppDataSource = new DataSource({
     type: 'mysql',
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: env.DB_HOST,
+    port: env.DB_PORT,
+    username: env.DB_USERNAME,
+    password: env.DB_PASSWORD,
+    database: env.DB_NAME,
     entities: [User, Comment, CommentLike, Like, Post, PostMedia, SavedPost, Follow],
-    synchronize: true,
+    migrations: [InitialSchema1793919422850],
+    migrationsRun: true,
+    synchronize: false,
     logging: false
 })

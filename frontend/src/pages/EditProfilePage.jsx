@@ -27,6 +27,7 @@ export const EditProfilePage = () => {
   const [bio, setBio] = useState(user?.bio || "");
   const [goal, setGoal] = useState(user?.goal || "");
   const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,6 +35,10 @@ export const EditProfilePage = () => {
     setError("");
     if (name.trim().length < 3) {
       setError("O nome deve ter ao menos 3 caracteres.");
+      return;
+    }
+    if (password && !currentPassword) {
+      setError("Informe a senha atual para trocar a senha.");
       return;
     }
     setSaving(true);
@@ -44,6 +49,7 @@ export const EditProfilePage = () => {
         bio: bio.trim(),
         goal: goal.trim(),
         password: password || undefined,
+        currentPassword: password ? currentPassword : undefined,
       });
       setUser({ ...user, ...updated });
       notify("Pronto!", "Perfil atualizado com sucesso.");
@@ -123,6 +129,14 @@ export const EditProfilePage = () => {
             onChangeText={setPassword}
             placeholder="deixe em branco para manter"
           />
+          {password.length > 0 && (
+            <Input
+              label="Senha atual"
+              password
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+            />
+          )}
           <FormError message={error} />
         </View>
 

@@ -1,39 +1,25 @@
 import { Request, Response } from "express";
 import { FollowService } from "../services/FollowService";
+import { getPagination } from "../utils/pagination";
 
 export class FollowController {
     private service = new FollowService()
 
-    async toggle(req:Request, res:Response) {
-        try {
-            const targetId = Number(req.params.userId)
-            const result = await this.service.toggle(targetId, req.user!.id)
+    async toggle(req: Request, res: Response) {
+        const result = await this.service.toggle(Number(req.params.userId), req.user!.id)
 
-            return res.status(200).json(result)
-        } catch(e: any) {
-            return res.status(400).json({message: e.message})
-        }
+        return res.status(200).json(result)
     }
 
-    async followers(req:Request, res:Response) {
-        try {
-            const userId = Number(req.params.userId)
-            const users = await this.service.listFollowers(userId)
+    async followers(req: Request, res: Response) {
+        const users = await this.service.listFollowers(Number(req.params.userId), getPagination(req))
 
-            return res.status(200).json(users)
-        } catch(e: any) {
-            return res.status(400).json({message: e.message})
-        }
+        return res.status(200).json(users)
     }
 
-    async following(req:Request, res:Response) {
-        try {
-            const userId = Number(req.params.userId)
-            const users = await this.service.listFollowing(userId)
+    async following(req: Request, res: Response) {
+        const users = await this.service.listFollowing(Number(req.params.userId), getPagination(req))
 
-            return res.status(200).json(users)
-        } catch(e: any) {
-            return res.status(400).json({message: e.message})
-        }
+        return res.status(200).json(users)
     }
 }

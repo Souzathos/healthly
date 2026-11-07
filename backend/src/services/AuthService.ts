@@ -1,16 +1,22 @@
 import { AppDataSource } from "../config/data-source";
 import { User } from "../models/User";
-import { sanitizeUser } from "../utils/sanitizeUser";
+import { RegisterInput } from "../schemas/authSchemas";
+import { sanitizeOwnUser } from "../utils/sanitizeUser";
 import bcrypt from 'bcrypt'
+import { ConflictError, UnauthorizedError } from "../utils/errors";
 
 export class AuthService {
     private repo = AppDataSource.getRepository(User)
 
-    async register(data: any) {
+    async register(data: RegisterInput) {
         const exists = await this.repo.findOne({where: {email: data.email}})
-        if(exists) throw new Error('E-mail já cadastrado')
+        if(exists) throw new ConflictError('E-mail já cadastrado')
         const cpfExists = await this.repo.findOne({where: {cpf: data.cpf}})
-        if(cpfExists) throw new Error('CPF já cadastrado')
+        if(cpfExists) throw new ConflictError('CPF já cadastrado')
+        if(data.handle) {
+            const handleExists = await this.repo.findOne({where: {handle: data.handle}})
+            if(handleExists) throw new ConflictError('@usuário já está em uso')
+        }
 
         const password = await bcrypt.hash(data.password, 10)
         const user = this.repo.create({...data, password: password})
@@ -19,10 +25,10 @@ export class AuthService {
 
     async login(email: string, password: string) {
         const user = await this.repo.findOneBy({ email })
-        if (!user) throw new Error('Credenciais inválidas')
+        if (!user) throw new UnauthorizedError('Credenciais inválidas')
         const validate = await bcrypt.compare(password, user.password)
-        if (!validate) throw new Error('Credenciais inválidas')
+        if (!validate) throw new UnauthorizedError('Credenciais inválidas')
     
-        return sanitizeUser(user)
+        return sanitizeOwnUser(user)
     }
 }

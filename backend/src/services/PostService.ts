@@ -7,8 +7,9 @@ import { Like } from "../models/Like";
 import { SavedPost } from "../models/SavedPost";
 import { In } from "typeorm";
 import { sanitizeUser } from "../utils/sanitizeUser";
-
-const PAGE_SIZE = 10
+import { NotFoundError } from "../utils/errors";
+import { Pagination } from "../utils/pagination";
+import { postCounts } from "../utils/relationCounts";
 
 export class PostService {
     private repo = AppDataSource.getRepository(Post)
@@ -24,8 +25,6 @@ export class PostService {
             .leftJoinAndSelect('post.user', 'user')
             .leftJoin('post.images', 'image')
             .addSelect(['image.id', 'image.position', 'image.mimeType'])
-            .loadRelationIdAndMap('post.likeIds', 'post.likes')
-            .loadRelationIdAndMap('post.commentIds', 'post.comments')
     }
 
     private async viewerSets(posts: any[], viewerId?: number) {
@@ -49,23 +48,26 @@ export class PostService {
         }
     }
 
-    private format(post: any, liked?: Set<number>, saved?: Set<number>) {
-        return {
+    private async formatAll(posts: any[], viewerId?: number) {
+        const {liked, saved} = await this.viewerSets(posts, viewerId)
+        const counts = await postCounts(posts.map(p => p.id))
+
+        return posts.map(post => ({
             id: post.id,
             description: post.description,
             images: post.images,
             createdAt: post.createdAt,
             user: post.user ? sanitizeUser(post.user) : null,
-            likesCount: post.likeIds ? post.likeIds.length : 0,
-            commentsCount: post.commentIds ? post.commentIds.length : 0,
-            likedByMe: liked ? liked.has(post.id) : false,
-            savedByMe: saved ? saved.has(post.id) : false
-        }
+            likesCount: counts.likesCount(post.id),
+            commentsCount: counts.commentsCount(post.id),
+            likedByMe: liked.has(post.id),
+            savedByMe: saved.has(post.id)
+        }))
     }
 
     async create(data: any, userId: number, files?:Express.Multer.File[]) {
         const user = await this.userRepo.findOneBy({id: userId})
-        if(!user) throw new Error('Usuário não encontrado')
+        if(!user) throw new NotFoundError('Usuário não encontrado')
 
         const post = this.repo.create({
             description: data.description,
@@ -109,7 +111,7 @@ export class PostService {
 
     async delete(id: number) {
         const post = await this.repo.findOneBy({id})
-        if(!post) throw new Error('Post não encontrado')
+        if(!post) throw new NotFoundError('Post não encontrado')
 
         await this.repo.delete(id)
 
@@ -117,7 +119,7 @@ export class PostService {
     }
 
     // Feed: posts dos usuários seguidos + os próprios, mais recentes primeiro
-    async getFeed(userId: number, page: number = 1) {
+    async getFeed(userId: number, {skip, take}: Pagination) {
         const follows = await this.followRepo.find({
             where: {follower: {id: userId}},
             relations: {following: true}
@@ -128,12 +130,11 @@ export class PostService {
         const posts = await this.baseQuery()
             .where('post.userId IN (:...ids)', {ids})
             .orderBy('post.createdAt', 'DESC')
-            .skip((page - 1) * PAGE_SIZE)
-            .take(PAGE_SIZE)
+            .skip(skip)
+            .take(take)
             .getMany()
 
-        const {liked, saved} = await this.viewerSets(posts, userId)
-        return posts.map((p: any) => this.format(p, liked, saved))
+        return this.formatAll(posts, userId)
     }
 
     async getById(id: number, viewerId?: number) {
@@ -141,35 +142,38 @@ export class PostService {
             .where('post.id = :id', {id})
             .getOne()
 
-        if(!post) throw new Error('Post não encontrado')
+        if(!post) throw new NotFoundError('Post não encontrado')
 
-        const {liked, saved} = await this.viewerSets([post], viewerId)
-        return this.format(post, liked, saved)
+        const [formatted] = await this.formatAll([post], viewerId)
+        return formatted
     }
 
-    async getByUser(userId: number, viewerId?: number) {
+    async getByUser(userId: number, {skip, take}: Pagination, viewerId?: number) {
         const posts = await this.baseQuery()
             .where('post.userId = :userId', {userId})
             .orderBy('post.createdAt', 'DESC')
+            .skip(skip)
+            .take(take)
             .getMany()
 
-        const {liked, saved} = await this.viewerSets(posts, viewerId)
-        return posts.map((p: any) => this.format(p, liked, saved))
+        return this.formatAll(posts, viewerId)
     }
 
-    async getLikedByUser(userId: number) {
+    async getLikedByUser(userId: number, {skip, take}: Pagination) {
         const posts = await this.baseQuery()
-            .innerJoin('post.likes', 'likeFilter', 'likeFilter.userId = :userId', {userId})
+            // Com skip/take, a coluna usada no orderBy precisa estar selecionada
+            .innerJoinAndSelect('post.likes', 'likeFilter', 'likeFilter.userId = :userId', {userId})
             .orderBy('likeFilter.createdAt', 'DESC')
+            .skip(skip)
+            .take(take)
             .getMany()
 
-        const {liked, saved} = await this.viewerSets(posts, userId)
-        return posts.map((p: any) => this.format(p, liked, saved))
+        return this.formatAll(posts, userId)
     }
 
     async getMedia(mediaId: number) {
         const media = await this.imageRepo.findOneBy({id: mediaId})
-        if(!media) throw new Error('Mídia não encontrada')
+        if(!media) throw new NotFoundError('Mídia não encontrada')
         return media
     }
 }
