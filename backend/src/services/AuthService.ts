@@ -1,14 +1,14 @@
 import { AppDataSource } from "../config/data-source";
 import { User } from "../models/User";
-import { RegisterInput } from "../schemas/authSchemas";
-import { sanitizeOwnUser } from "../utils/sanitizeUser";
+import { RegisterDTO } from "../dtos/user";
+import { UserMapper } from "../mappers/UserMapper";
 import bcrypt from 'bcrypt'
-import { ConflictError, UnauthorizedError } from "../utils/errors";
+import { ConflictError, UnauthorizedError } from "../errors";
 
 export class AuthService {
     private repo = AppDataSource.getRepository(User)
 
-    async register(data: RegisterInput) {
+    async register(data: RegisterDTO) {
         const exists = await this.repo.findOne({where: {email: data.email}})
         if(exists) throw new ConflictError('E-mail já cadastrado')
         const cpfExists = await this.repo.findOne({where: {cpf: data.cpf}})
@@ -29,6 +29,6 @@ export class AuthService {
         const validate = await bcrypt.compare(password, user.password)
         if (!validate) throw new UnauthorizedError('Credenciais inválidas')
     
-        return sanitizeOwnUser(user)
+        return UserMapper.toPrivate(user)
     }
 }

@@ -1,9 +1,9 @@
 import { AppDataSource } from "../config/data-source";
+import { ForbiddenError, NotFoundError } from "../errors";
+import { CommentMapper } from "../mappers/CommentMapper";
 import { Comment } from "../models/Comment";
 import { Post } from "../models/Post";
 import { User } from "../models/User";
-import { sanitizeUser } from "../utils/sanitizeUser";
-import { ForbiddenError, NotFoundError } from "../utils/errors";
 import { Pagination } from "../utils/pagination";
 import { commentLikeCounts } from "../utils/relationCounts";
 
@@ -19,10 +19,9 @@ export class CommentService {
         const user = await this.userRepo.findOneBy({id: userId})
         if(!user) throw new NotFoundError('Usuário não encontrado')
 
-        const comment = this.repo.create({text, post, user})
-        const saved = await this.repo.save(comment)
+        const saved = await this.repo.save(this.repo.create({text, post, user}))
 
-        return {...saved, post: undefined, user: sanitizeUser(user)}
+        return CommentMapper.toResponse(saved, 0)
     }
 
     async listByPost(postId: number, {skip, take}: Pagination) {
@@ -36,13 +35,7 @@ export class CommentService {
 
         const likes = await commentLikeCounts(comments.map(c => c.id))
 
-        return comments.map(c => ({
-            id: c.id,
-            text: c.text,
-            createdAt: c.createdAt,
-            user: sanitizeUser(c.user),
-            likesCount: likes.get(c.id) ?? 0
-        }))
+        return comments.map(c => CommentMapper.toResponse(c, likes.get(c.id) ?? 0))
     }
 
     async delete(commentId: number, userId: number) {

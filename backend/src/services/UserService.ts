@@ -1,30 +1,34 @@
 import bcrypt from 'bcrypt'
 import { AppDataSource } from "../config/data-source";
-import { User } from "../models/User";
-import { Post } from "../models/Post";
+import { UpdateUserDTO } from "../dtos/user";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors";
+import { PostMapper } from "../mappers/PostMapper";
+import { UserMapper } from "../mappers/UserMapper";
 import { Follow } from "../models/Follow";
+import { Post } from "../models/Post";
+import { User } from "../models/User";
 import { DEFAULT_LIMIT } from "../utils/pagination";
 import { postCounts } from "../utils/relationCounts";
-import { sanitizeOwnUser, sanitizeUser } from "../utils/sanitizeUser";
-import { BadRequestError, ConflictError, NotFoundError } from "../utils/errors";
 
 export class UserService {
     private repo = AppDataSource.getRepository(User)
     private postRepo = AppDataSource.getRepository(Post)
     private followRepo = AppDataSource.getRepository(Follow)
 
-    async getProfile(id: number) {
+    private async findOrFail(id: number) {
         const user = await this.repo.findOneBy({id})
         if(!user) throw new NotFoundError('Usuário não encontrado')
+        return user
+    }
 
-        return {...sanitizeUser(user), ...await this.profileStats(id)}
+    async getProfile(id: number) {
+        const user = await this.findOrFail(id)
+        return {...UserMapper.toPublic(user), ...await this.profileStats(id)}
     }
 
     async getOwnProfile(id: number) {
-        const user = await this.repo.findOneBy({id})
-        if(!user) throw new NotFoundError('Usuário não encontrado')
-
-        return {...sanitizeOwnUser(user), ...await this.profileStats(id)}
+        const user = await this.findOrFail(id)
+        return {...UserMapper.toPrivate(user), ...await this.profileStats(id)}
     }
 
     private async profileStats(id: number) {
@@ -36,36 +40,33 @@ export class UserService {
             .take(DEFAULT_LIMIT)
             .getMany()
 
-        const postsCount = await this.postRepo.countBy({user: {id}})
-        const counts = await postCounts(posts.map(p => p.id))
-        const followersCount = await this.followRepo.countBy({following: {id}})
-        const followingCount = await this.followRepo.countBy({follower: {id}})
+        const [postsCount, followersCount, followingCount, counts] = await Promise.all([
+            this.postRepo.countBy({user: {id}}),
+            this.followRepo.countBy({following: {id}}),
+            this.followRepo.countBy({follower: {id}}),
+            postCounts(posts.map(p => p.id))
+        ])
 
         return {
             postsCount,
             followersCount,
             followingCount,
-            posts: posts.map((p: any) => ({
-                id: p.id,
-                description: p.description,
-                images: p.images,
-                createdAt: p.createdAt,
-                likesCount: counts.likesCount(p.id),
-                commentsCount: counts.commentsCount(p.id)
+            posts: posts.map(post => PostMapper.toSummary(post, {
+                likesCount: counts.likesCount(post.id),
+                commentsCount: counts.commentsCount(post.id)
             }))
         }
     }
 
-    async update(id: number, data: any) {
-        const user = await this.repo.findOneBy({id})
-        if(!user) throw new NotFoundError('Usuário não encontrado')
+    async update(id: number, data: UpdateUserDTO) {
+        const user = await this.findOrFail(id)
 
         if(data.handle && data.handle !== user.handle) {
             const handleExists = await this.repo.findOneBy({handle: data.handle})
             if(handleExists) throw new ConflictError('@usuário já está em uso')
         }
 
-        const allowed: any = {}
+        const allowed: Partial<User> = {}
         if(data.name !== undefined) allowed.name = data.name
         if(data.handle !== undefined) allowed.handle = data.handle
         if(data.bio !== undefined) allowed.bio = data.bio
@@ -79,12 +80,11 @@ export class UserService {
 
         this.repo.merge(user, allowed)
         const saved = await this.repo.save(user)
-        return sanitizeOwnUser(saved)
+        return UserMapper.toPrivate(saved)
     }
 
     async delete(id: number) {
-        const user = await this.repo.findOneBy({id})
-        if(!user) throw new NotFoundError('Usuário não encontrado')
+        await this.findOrFail(id)
 
         await this.repo.delete(id)
         return {message: 'Conta excluída com sucesso!'}

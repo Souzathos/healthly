@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { AppError } from "../utils/errors";
+import { AppError } from "../errors";
 
 export function notFoundHandler(_req: Request, res: Response) {
     return res.status(404).json({message: 'Rota não encontrada'})

@@ -1,13 +1,14 @@
+import { In } from "typeorm";
 import { AppDataSource } from "../config/data-source";
-import { Post } from "../models/Post";
-import { PostMedia } from "../models/PostMedia";
-import { User } from "../models/User";
+import { CreatePostDTO, UpdatePostDTO } from "../dtos/post";
+import { NotFoundError } from "../errors";
+import { PostMapper } from "../mappers/PostMapper";
 import { Follow } from "../models/Follow";
 import { Like } from "../models/Like";
+import { Post } from "../models/Post";
+import { PostMedia } from "../models/PostMedia";
 import { SavedPost } from "../models/SavedPost";
-import { In } from "typeorm";
-import { sanitizeUser } from "../utils/sanitizeUser";
-import { NotFoundError } from "../utils/errors";
+import { User } from "../models/User";
 import { Pagination } from "../utils/pagination";
 import { postCounts } from "../utils/relationCounts";
 
@@ -19,7 +20,7 @@ export class PostService {
     private likeRepo = AppDataSource.getRepository(Like)
     private savedRepo = AppDataSource.getRepository(SavedPost)
 
-    // Monta a query base de leitura: autor + mídias (só metadados, sem o blob) + ids p/ contagem
+    // Query base de leitura: autor + mídias (só metadados, sem o blob)
     private baseQuery() {
         return this.repo.createQueryBuilder('post')
             .leftJoinAndSelect('post.user', 'user')
@@ -27,20 +28,16 @@ export class PostService {
             .addSelect(['image.id', 'image.position', 'image.mimeType'])
     }
 
-    private async viewerSets(posts: any[], viewerId?: number) {
-        const empty = {liked: new Set<number>(), saved: new Set<number>()}
-        if(!viewerId || posts.length === 0) return empty
+    private async viewerSets(postIds: number[], viewerId?: number) {
+        if(!viewerId || postIds.length === 0) {
+            return {liked: new Set<number>(), saved: new Set<number>()}
+        }
 
-        const postIds = posts.map(p => p.id)
-
-        const likes = await this.likeRepo.find({
-            where: {user: {id: viewerId}, post: {id: In(postIds)}},
-            relations: {post: true}
-        })
-        const saved = await this.savedRepo.find({
-            where: {user: {id: viewerId}, post: {id: In(postIds)}},
-            relations: {post: true}
-        })
+        const where = {user: {id: viewerId}, post: {id: In(postIds)}}
+        const [likes, saved] = await Promise.all([
+            this.likeRepo.find({where, relations: {post: true}}),
+            this.savedRepo.find({where, relations: {post: true}})
+        ])
 
         return {
             liked: new Set(likes.map(l => l.post.id)),
@@ -48,16 +45,15 @@ export class PostService {
         }
     }
 
-    private async formatAll(posts: any[], viewerId?: number) {
-        const {liked, saved} = await this.viewerSets(posts, viewerId)
-        const counts = await postCounts(posts.map(p => p.id))
+    // Monta a resposta de vários posts com contagens e o estado de quem está vendo
+    async toResponses(posts: Post[], viewerId?: number) {
+        const ids = posts.map(p => p.id)
+        const [{liked, saved}, counts] = await Promise.all([
+            this.viewerSets(ids, viewerId),
+            postCounts(ids)
+        ])
 
-        return posts.map(post => ({
-            id: post.id,
-            description: post.description,
-            images: post.images,
-            createdAt: post.createdAt,
-            user: post.user ? sanitizeUser(post.user) : null,
+        return posts.map(post => PostMapper.toResponse(post, {
             likesCount: counts.likesCount(post.id),
             commentsCount: counts.commentsCount(post.id),
             likedByMe: liked.has(post.id),
@@ -65,16 +61,11 @@ export class PostService {
         }))
     }
 
-    async create(data: any, userId: number, files?:Express.Multer.File[]) {
+    async create(data: CreatePostDTO, userId: number, files?: Express.Multer.File[]) {
         const user = await this.userRepo.findOneBy({id: userId})
         if(!user) throw new NotFoundError('Usuário não encontrado')
 
-        const post = this.repo.create({
-            description: data.description,
-            user
-        })
-
-        const savedPost = await this.repo.save(post)
+        const savedPost = await this.repo.save(this.repo.create({description: data.description, user}))
 
         if (files && files.length > 0) {
             const images = files.map((file, index) =>
@@ -87,10 +78,11 @@ export class PostService {
             )
             await this.imageRepo.save(images)
         }
-        return {...savedPost, user: sanitizeUser(savedPost.user)}
+
+        return this.getById(savedPost.id, userId)
     }
 
-    async update(data: any, post:Post, files?: Express.Multer.File[]) {
+    async update(data: UpdatePostDTO, post: Post, files?: Express.Multer.File[]) {
         if(files && files.length > 0) {
             await this.imageRepo.delete({post: {id: post.id}})
 
@@ -106,7 +98,7 @@ export class PostService {
 
         await this.repo.update({id: post.id}, {description: data.description})
 
-        return this.getById(post.id)
+        return this.getById(post.id, post.user.id)
     }
 
     async delete(id: number) {
@@ -134,7 +126,7 @@ export class PostService {
             .take(take)
             .getMany()
 
-        return this.formatAll(posts, userId)
+        return this.toResponses(posts, userId)
     }
 
     async getById(id: number, viewerId?: number) {
@@ -144,8 +136,8 @@ export class PostService {
 
         if(!post) throw new NotFoundError('Post não encontrado')
 
-        const [formatted] = await this.formatAll([post], viewerId)
-        return formatted
+        const [response] = await this.toResponses([post], viewerId)
+        return response
     }
 
     async getByUser(userId: number, {skip, take}: Pagination, viewerId?: number) {
@@ -156,7 +148,7 @@ export class PostService {
             .take(take)
             .getMany()
 
-        return this.formatAll(posts, viewerId)
+        return this.toResponses(posts, viewerId)
     }
 
     async getLikedByUser(userId: number, {skip, take}: Pagination) {
@@ -168,7 +160,7 @@ export class PostService {
             .take(take)
             .getMany()
 
-        return this.formatAll(posts, userId)
+        return this.toResponses(posts, userId)
     }
 
     async getMedia(mediaId: number) {

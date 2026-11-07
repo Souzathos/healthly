@@ -16,6 +16,8 @@ describe('posts', () => {
         const user = await createUser()
         const created = await upload(user.auth).attach('images', PNG, png)
         assert.equal(created.status, 201)
+        assert.equal(created.body.images.length, 1)
+        assert.equal(created.body.likesCount, 0)
 
         const post = await api().get(`/post/${created.body.id}`)
         const media = await api().get(`/post/media/${post.body.images[0].id}`)
