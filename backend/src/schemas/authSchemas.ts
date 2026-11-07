@@ -16,6 +16,8 @@ export const registerSchema = z.object({
     goal: z.string().max(100).optional()
 })
 
+export type RegisterInput = z.infer<typeof registerSchema>
+
 export const updateUserSchema = z.object({
     name: z.string().min(3, 'O nome deve ter ao menos 3 caracteres').max(255).optional(),
     handle: z.string().min(2).max(50).optional(),

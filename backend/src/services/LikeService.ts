@@ -3,6 +3,7 @@ import { Like } from "../models/Like";
 import { CommentLike } from "../models/CommentLike";
 import { Post } from "../models/Post";
 import { Comment } from "../models/Comment";
+import { NotFoundError } from "../utils/errors";
 
 export class LikeService {
     private likeRepo = AppDataSource.getRepository(Like)
@@ -13,7 +14,7 @@ export class LikeService {
     // Curte ou descurte um post (toggle)
     async togglePost(postId: number, userId: number) {
         const post = await this.postRepo.findOneBy({id: postId})
-        if(!post) throw new Error('Post não encontrado')
+        if(!post) throw new NotFoundError('Post não encontrado')
 
         const existing = await this.likeRepo.findOne({
             where: {post: {id: postId}, user: {id: userId}}
@@ -32,7 +33,7 @@ export class LikeService {
     // Curte ou descurte um comentário (toggle)
     async toggleComment(commentId: number, userId: number) {
         const comment = await this.commentRepo.findOneBy({id: commentId})
-        if(!comment) throw new Error('Comentário não encontrado')
+        if(!comment) throw new NotFoundError('Comentário não encontrado')
 
         const existing = await this.commentLikeRepo.findOne({
             where: {comment: {id: commentId}, user: {id: userId}}

@@ -4,25 +4,15 @@ import { LikeService } from "../services/LikeService";
 export class LikeController {
     private service = new LikeService()
 
-    async togglePost(req:Request, res:Response) {
-        try {
-            const postId = Number(req.params.postId)
-            const result = await this.service.togglePost(postId, req.user!.id)
+    async togglePost(req: Request, res: Response) {
+        const result = await this.service.togglePost(Number(req.params.postId), req.user!.id)
 
-            return res.status(200).json(result)
-        } catch(e: any) {
-            return res.status(400).json({message: e.message})
-        }
+        return res.status(200).json(result)
     }
 
-    async toggleComment(req:Request, res:Response) {
-        try {
-            const commentId = Number(req.params.commentId)
-            const result = await this.service.toggleComment(commentId, req.user!.id)
+    async toggleComment(req: Request, res: Response) {
+        const result = await this.service.toggleComment(Number(req.params.commentId), req.user!.id)
 
-            return res.status(200).json(result)
-        } catch(e: any) {
-            return res.status(400).json({message: e.message})
-        }
+        return res.status(200).json(result)
     }
 }
