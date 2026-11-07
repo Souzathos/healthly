@@ -3,7 +3,7 @@ import { Like } from "../models/Like";
 import { CommentLike } from "../models/CommentLike";
 import { Post } from "../models/Post";
 import { Comment } from "../models/Comment";
-import { NotFoundError } from "../utils/errors";
+import { NotFoundError } from "../errors";
 
 export class LikeService {
     private likeRepo = AppDataSource.getRepository(Like)

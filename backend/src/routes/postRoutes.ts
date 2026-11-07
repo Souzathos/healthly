@@ -5,7 +5,7 @@ import { optionalAuthMiddleware } from "../middlewares/optionalAuthMiddleware";
 import { checkPostOwnerMiddleware } from "../middlewares/checkPostOwnerMiddleware";
 import { validateBody, validateIds } from "../middlewares/validate";
 import { uploadImages } from "../middlewares/upload";
-import { createPostSchema, updatePostSchema } from "../schemas/postSchemas";
+import { CreatePostDTO, UpdatePostDTO } from "../dtos/post";
 
 const postRoutes = Router()
 const post = new PostController()
@@ -17,8 +17,8 @@ postRoutes.get('/liked', authMiddleware, post.likedByUser.bind(post))
 postRoutes.get('/user/:userId', validateIds('userId'), optionalAuthMiddleware, post.getByUser.bind(post))
 postRoutes.get('/:id', validateIds('id'), optionalAuthMiddleware, post.getById.bind(post))
 
-postRoutes.post('/create', authMiddleware, uploadImages, validateBody(createPostSchema), post.create.bind(post))
-postRoutes.put('/update/:id', validateIds('id'), authMiddleware, checkPostOwnerMiddleware, uploadImages, validateBody(updatePostSchema), post.update.bind(post))
+postRoutes.post('/create', authMiddleware, uploadImages, validateBody(CreatePostDTO), post.create.bind(post))
+postRoutes.put('/update/:id', validateIds('id'), authMiddleware, checkPostOwnerMiddleware, uploadImages, validateBody(UpdatePostDTO), post.update.bind(post))
 postRoutes.delete('/delete/:id', validateIds('id'), authMiddleware, checkPostOwnerMiddleware, post.delete.bind(post))
 
 

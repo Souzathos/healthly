@@ -1,8 +1,8 @@
 import { AppDataSource } from "../config/data-source";
 import { Follow } from "../models/Follow";
 import { User } from "../models/User";
-import { sanitizeUser } from "../utils/sanitizeUser";
-import { BadRequestError, NotFoundError } from "../utils/errors";
+import { UserMapper } from "../mappers/UserMapper";
+import { BadRequestError, NotFoundError } from "../errors";
 import { Pagination } from "../utils/pagination";
 
 export class FollowService {
@@ -39,7 +39,7 @@ export class FollowService {
             skip,
             take
         })
-        return follows.map(f => sanitizeUser(f.follower))
+        return follows.map(f => UserMapper.toPublic(f.follower))
     }
 
     // Quem o usuário segue
@@ -51,6 +51,6 @@ export class FollowService {
             skip,
             take
         })
-        return follows.map(f => sanitizeUser(f.following))
+        return follows.map(f => UserMapper.toPublic(f.following))
     }
 }

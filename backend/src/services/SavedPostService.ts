@@ -1,17 +1,14 @@
 import { AppDataSource } from "../config/data-source";
-import { SavedPost } from "../models/SavedPost";
+import { NotFoundError } from "../errors";
 import { Post } from "../models/Post";
-import { Like } from "../models/Like";
-import { In } from "typeorm";
-import { sanitizeUser } from "../utils/sanitizeUser";
-import { NotFoundError } from "../utils/errors";
+import { SavedPost } from "../models/SavedPost";
 import { Pagination } from "../utils/pagination";
-import { postCounts } from "../utils/relationCounts";
+import { PostService } from "./PostService";
 
 export class SavedPostService {
     private repo = AppDataSource.getRepository(SavedPost)
     private postRepo = AppDataSource.getRepository(Post)
-    private likeRepo = AppDataSource.getRepository(Like)
+    private posts = new PostService()
 
     // Salva ou remove um post dos salvos (toggle)
     async toggle(postId: number, userId: number) {
@@ -27,8 +24,7 @@ export class SavedPostService {
             return {saved: false}
         }
 
-        const saved = this.repo.create({post: {id: postId}, user: {id: userId}})
-        await this.repo.save(saved)
+        await this.repo.save(this.repo.create({post: {id: postId}, user: {id: userId}}))
         return {saved: true}
     }
 
@@ -44,28 +40,8 @@ export class SavedPostService {
             .take(take)
             .getMany()
 
-        const postIds = saved.map((s: any) => s.post.id)
-        const counts = await postCounts(postIds)
-        const likedSet = new Set<number>()
-        if(postIds.length > 0) {
-            const likes = await this.likeRepo.find({
-                where: {user: {id: userId}, post: {id: In(postIds)}},
-                relations: {post: true}
-            })
-            likes.forEach(l => likedSet.add(l.post.id))
-        }
+        const responses = await this.posts.toResponses(saved.map(s => s.post), userId)
 
-        return saved.map((s: any) => ({
-            id: s.post.id,
-            description: s.post.description,
-            images: s.post.images,
-            createdAt: s.post.createdAt,
-            user: s.post.user ? sanitizeUser(s.post.user) : null,
-            likesCount: counts.likesCount(s.post.id),
-            commentsCount: counts.commentsCount(s.post.id),
-            likedByMe: likedSet.has(s.post.id),
-            savedByMe: true,
-            savedAt: s.createdAt
-        }))
+        return responses.map((post, index) => ({...post, savedAt: saved[index].createdAt}))
     }
 }
