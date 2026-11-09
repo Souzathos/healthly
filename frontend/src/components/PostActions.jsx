@@ -9,10 +9,13 @@ import { formatCount } from "../utils/format";
 export const PostActions = ({
   liked,
   saved,
+  reposted,
   likesCount,
   commentsCount,
+  repostsCount,
   showCounts = true,
   onComment,
+  onRepost,
   onLike,
   onSave,
 }) => {
@@ -24,6 +27,14 @@ export const PostActions = ({
       color: colors.muted,
       count: commentsCount,
       onPress: onComment,
+    },
+    {
+      key: "repost",
+      label: reposted ? "Desfazer repost" : "Repostar",
+      icon: "repeat",
+      color: reposted ? colors.accent2 : colors.muted,
+      count: repostsCount,
+      onPress: onRepost,
     },
     {
       key: "like",

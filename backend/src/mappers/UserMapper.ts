@@ -8,7 +8,9 @@ export class UserMapper {
             name: user.name,
             handle: user.handle,
             bio: user.bio,
-            goal: user.goal
+            goal: user.goal,
+            isVerified: user.isVerified ?? false,
+            professionalType: user.professionalType ?? null
         }
     }
 
@@ -16,7 +18,8 @@ export class UserMapper {
     static toPrivate(user: User) {
         return {
             ...UserMapper.toPublic(user),
-            email: user.email
+            email: user.email,
+            role: user.role
         }
     }
 

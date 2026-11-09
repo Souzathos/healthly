@@ -2,12 +2,14 @@ import { AppDataSource } from "../config/data-source";
 import { Follow } from "../models/Follow";
 import { User } from "../models/User";
 import { UserMapper } from "../mappers/UserMapper";
+import { NotificationService } from "./NotificationService";
 import { BadRequestError, NotFoundError } from "../errors";
 import { Pagination } from "../utils/pagination";
 
 export class FollowService {
     private repo = AppDataSource.getRepository(Follow)
     private userRepo = AppDataSource.getRepository(User)
+    private notifications = new NotificationService()
 
     // Segue ou deixa de seguir um usuário (toggle)
     async toggle(targetId: number, userId: number) {
@@ -20,13 +22,17 @@ export class FollowService {
             where: {follower: {id: userId}, following: {id: targetId}}
         })
 
+        const notification = {type: 'follow' as const, recipientId: targetId, actorId: userId}
+
         if(existing) {
             await this.repo.delete(existing.id)
+            await this.notifications.remove(notification)
             return {following: false}
         }
 
         const follow = this.repo.create({follower: {id: userId}, following: {id: targetId}})
         await this.repo.save(follow)
+        await this.notifications.notify(notification)
         return {following: true}
     }
 

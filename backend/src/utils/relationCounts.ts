@@ -3,6 +3,7 @@ import { AppDataSource } from "../config/data-source";
 import { Comment } from "../models/Comment";
 import { CommentLike } from "../models/CommentLike";
 import { Like } from "../models/Like";
+import { Repost } from "../models/Repost";
 
 // Conta as linhas relacionadas a cada id em uma única consulta
 async function countBy(repo: Repository<ObjectLiteral>, column: string, ids: number[]) {
@@ -21,14 +22,16 @@ async function countBy(repo: Repository<ObjectLiteral>, column: string, ids: num
 }
 
 export async function postCounts(postIds: number[]) {
-    const [likes, comments] = await Promise.all([
+    const [likes, comments, reposts] = await Promise.all([
         countBy(AppDataSource.getRepository(Like), 'postId', postIds),
-        countBy(AppDataSource.getRepository(Comment), 'postId', postIds)
+        countBy(AppDataSource.getRepository(Comment), 'postId', postIds),
+        countBy(AppDataSource.getRepository(Repost), 'postId', postIds)
     ])
 
     return {
         likesCount: (id: number) => likes.get(id) ?? 0,
-        commentsCount: (id: number) => comments.get(id) ?? 0
+        commentsCount: (id: number) => comments.get(id) ?? 0,
+        repostsCount: (id: number) => reposts.get(id) ?? 0
     }
 }
 

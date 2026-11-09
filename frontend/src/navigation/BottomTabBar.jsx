@@ -3,6 +3,9 @@ import { View, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../components/Icon";
+import { Badge } from "../components/ui/badge";
+import { Text } from "../components/ui/text";
+import { useRealtime } from "../context/RealtimeContext";
 import { colors } from "../theme/colors";
 
 const ICONS = {
@@ -19,6 +22,7 @@ const BOTTOM_PADDING = 8;
 export const BottomTabBar = ({ state, navigation }) => {
   const stackNav = useNavigation();
   const insets = useSafeAreaInsets();
+  const { unreadCount } = useRealtime();
 
   return (
     <View
@@ -50,6 +54,7 @@ export const BottomTabBar = ({ state, navigation }) => {
 
         const routeIndex = state.routes.findIndex((r) => r.name === routeName);
         const isFocused = state.index === routeIndex;
+        const badge = routeName === "Notifications" && unreadCount > 0 ? unreadCount : 0;
 
         return (
           <Pressable
@@ -65,7 +70,9 @@ export const BottomTabBar = ({ state, navigation }) => {
               }
             }}
             accessibilityRole="button"
-            accessibilityLabel={ICONS[routeName].label}
+            accessibilityLabel={
+              badge ? `${ICONS[routeName].label}, ${badge} não lidas` : ICONS[routeName].label
+            }
             accessibilityState={{ selected: isFocused }}
             className="w-12 h-12 items-center justify-center active:opacity-70"
           >
@@ -74,6 +81,11 @@ export const BottomTabBar = ({ state, navigation }) => {
               size="lg"
               color={isFocused ? colors.accent : colors.mutedDark}
             />
+            {badge ? (
+              <Badge variant="count" className="absolute top-1.5 right-0.5">
+                <Text>{badge > 99 ? "99+" : badge}</Text>
+              </Badge>
+            ) : null}
           </Pressable>
         );
       })}

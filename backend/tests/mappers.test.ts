@@ -18,10 +18,16 @@ describe('mappers', () => {
     })
 
     it('expõe só os campos públicos', () => {
-        assert.deepEqual(Object.keys(UserMapper.toPublic(user)).sort(), ['bio', 'goal', 'handle', 'id', 'name'])
+        assert.deepEqual(
+            Object.keys(UserMapper.toPublic(user)).sort(),
+            ['bio', 'goal', 'handle', 'id', 'isVerified', 'name', 'professionalType']
+        )
     })
 
     it('acrescenta só o e-mail para o próprio usuário', () => {
-        assert.deepEqual(Object.keys(UserMapper.toPrivate(user)).sort(), ['bio', 'email', 'goal', 'handle', 'id', 'name'])
+        assert.deepEqual(
+            Object.keys(UserMapper.toPrivate(user)).sort(),
+            ['bio', 'email', 'goal', 'handle', 'id', 'isVerified', 'name', 'professionalType', 'role']
+        )
     })
 })

@@ -19,7 +19,8 @@ import { Icon } from "../components/Icon";
 import { IconButton } from "../components/IconButton";
 import { PostActions } from "../components/PostActions";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { deletePost, getPost } from "../services/posts";
+import { UserName } from "../components/UserName";
+import { deletePost, getPost, toggleRepost } from "../services/posts";
 import { toggleCommentLike, togglePostLike } from "../services/likes";
 import { toggleSaved } from "../services/saved";
 import { listComments, createComment, deleteComment } from "../services/comments";
@@ -40,6 +41,8 @@ export const PostDetailPage = ({ route, navigation }) => {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [reposted, setReposted] = useState(false);
+  const [busyRepost, setBusyRepost] = useState(false);
   const [busyLike, setBusyLike] = useState(false);
   const [busySave, setBusySave] = useState(false);
 
@@ -59,6 +62,7 @@ export const PostDetailPage = ({ route, navigation }) => {
       setLiked(!!p.likedByMe);
       setLikesCount(p.likesCount || 0);
       setSaved(!!p.savedByMe);
+      setReposted(!!p.repostedByMe);
       setComments(c);
     } catch {
       setError(true);
@@ -90,6 +94,20 @@ export const PostDetailPage = ({ route, navigation }) => {
       setLikesCount((c) => c + (prev ? 1 : -1));
     } finally {
       setBusyLike(false);
+    }
+  };
+
+  const onToggleRepost = async () => {
+    if (busyRepost) return;
+    const prev = reposted;
+    setBusyRepost(true);
+    setReposted(!prev);
+    try {
+      await toggleRepost(postId);
+    } catch {
+      setReposted(prev);
+    } finally {
+      setBusyRepost(false);
     }
   };
 
@@ -223,9 +241,7 @@ export const PostDetailPage = ({ route, navigation }) => {
               <Avatar user={post.user} size={46} onPress={() => openProfile(post.user)} />
               <View>
                 <View className="flex-row items-center gap-1.5">
-                  <Text className="text-white font-semibold text-[15px]">
-                    {post.user?.name}
-                  </Text>
+                  <UserName user={post.user} className="text-[15px]" badgeSize={15} />
                 </View>
                 <Text className="text-mutedDark text-[13px]">
                   {post.user ? handleFrom(post.user) : ""} · {timeAgo(post.createdAt)}
@@ -268,8 +284,10 @@ export const PostDetailPage = ({ route, navigation }) => {
               <PostActions
                 liked={liked}
                 saved={saved}
+                reposted={reposted}
                 showCounts={false}
                 onComment={() => inputRef.current?.focus()}
+                onRepost={onToggleRepost}
                 onLike={onToggleLike}
                 onSave={onToggleSave}
               />
@@ -294,9 +312,7 @@ export const PostDetailPage = ({ route, navigation }) => {
                   <View className="flex-1">
                     <View className="flex-row items-center gap-1.5">
                       <Pressable onPress={() => openProfile(c.user)}>
-                        <Text className="text-white font-semibold text-sm">
-                          {c.user?.name || "Usuário"}
-                        </Text>
+                        <UserName user={c.user} />
                       </Pressable>
                       <Text className="text-mutedDark text-xs">
                         {c.user ? handleFrom(c.user) : ""} · {timeAgo(c.createdAt)}

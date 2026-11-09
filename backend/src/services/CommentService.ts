@@ -8,21 +8,30 @@ import { CommentLike } from "../models/CommentLike";
 import { In } from "typeorm";
 import { Pagination } from "../utils/pagination";
 import { commentLikeCounts } from "../utils/relationCounts";
+import { NotificationService } from "./NotificationService";
 
 export class CommentService {
     private repo = AppDataSource.getRepository(Comment)
     private postRepo = AppDataSource.getRepository(Post)
     private userRepo = AppDataSource.getRepository(User)
     private likeRepo = AppDataSource.getRepository(CommentLike)
+    private notifications = new NotificationService()
 
     async create(text: string, postId: number, userId: number) {
-        const post = await this.postRepo.findOneBy({id: postId})
+        const post = await this.postRepo.findOne({where: {id: postId}, relations: {user: true}})
         if(!post) throw new NotFoundError('Post não encontrado')
 
         const user = await this.userRepo.findOneBy({id: userId})
         if(!user) throw new NotFoundError('Usuário não encontrado')
 
         const saved = await this.repo.save(this.repo.create({text, post, user}))
+        await this.notifications.notify({
+            type: 'comment',
+            recipientId: post.user.id,
+            actorId: userId,
+            postId,
+            commentId: saved.id
+        })
 
         return CommentMapper.toResponse(saved, {likesCount: 0, likedByMe: false})
     }

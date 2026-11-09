@@ -6,6 +6,9 @@ import { Comment } from "./Comment";
 import { SavedPost } from "./SavedPost";
 import { Follow } from "./Follow";
 
+export type UserRole = 'user' | 'admin'
+export type ProfessionalType = 'nutritionist' | 'physical_educator'
+
 @Entity('users')
 export class User {
     @PrimaryGeneratedColumn()
@@ -31,6 +34,17 @@ export class User {
 
     @Column({ nullable: true, length: 100 })
     goal: string
+
+    // admin aprova os pedidos de verificação
+    @Column({ type: 'varchar', length: 20, default: 'user' })
+    role: UserRole
+
+    // Preenchidos quando um pedido de verificação é aprovado
+    @Column({ default: false })
+    isVerified: boolean
+
+    @Column({ type: 'varchar', length: 30, nullable: true })
+    professionalType: ProfessionalType | null
 
     @OneToMany(() => Post, (p) => p.user)
     posts: Post[]

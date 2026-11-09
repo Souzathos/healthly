@@ -123,6 +123,22 @@ export const Icon = ({ name, size = "lg", color = colors.text, strokeWidth = 1.8
           <Line {...stroke} x1="1" y1="1" x2="23" y2="23" />
         </Svg>
       );
+    case "mail":
+      return (
+        <Svg {...common}>
+          <Path {...stroke} d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <Polyline {...stroke} points="22,6 12,13 2,6" />
+        </Svg>
+      );
+    case "repeat":
+      return (
+        <Svg {...common}>
+          <Polyline {...stroke} points="17 1 21 5 17 9" />
+          <Path {...stroke} d="M3 11V9a4 4 0 014-4h14" />
+          <Polyline {...stroke} points="7 23 3 19 7 15" />
+          <Path {...stroke} d="M21 13v2a4 4 0 01-4 4H3" />
+        </Svg>
+      );
     case "grid":
       return (
         <Svg {...common}>

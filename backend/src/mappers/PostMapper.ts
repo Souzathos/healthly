@@ -7,8 +7,10 @@ export type PostCounts = {
 }
 
 export type PostViewerState = PostCounts & {
+    repostsCount: number
     likedByMe: boolean
     savedByMe: boolean
+    repostedByMe: boolean
 }
 
 export class PostMapper {
@@ -17,13 +19,16 @@ export class PostMapper {
         return {
             id: post.id,
             description: post.description,
+            diet: post.diet ?? null,
             images: PostMapper.images(post),
             createdAt: post.createdAt,
             user: post.user ? UserMapper.toPublic(post.user) : null,
             likesCount: state.likesCount,
             commentsCount: state.commentsCount,
+            repostsCount: state.repostsCount,
             likedByMe: state.likedByMe,
-            savedByMe: state.savedByMe
+            savedByMe: state.savedByMe,
+            repostedByMe: state.repostedByMe
         }
     }
 

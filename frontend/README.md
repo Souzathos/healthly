@@ -32,11 +32,20 @@ Suba o backend antes: na pasta `../backend`, `npm run dev` (precisa de MySQL —
 - **Pessoas:** busca por nome ou @usuário (`/user/search`) e seguir/deixar de seguir na busca e no perfil.
 - **Perfil:** abas Posts / Curtidas / Salvos.
 - **Sessão:** token expirado ou inválido leva de volta ao login.
+- **Tempo real (socket.io):** notificações de curtida, comentário, repost e novo seguidor, com contador no sino.
+- **Mensagens diretas:** lista de conversas e chat ao vivo, com contador de não lidas. Botão "Mensagem" no perfil.
+- **Profissionais verificados:** nutricionista ou educador físico envia o CRN/CREF, o admin aprova e o selo aparece.
+- **Descoberta:** hashtags clicáveis, busca de posts, filtro por dieta e hashtags em alta.
+- **Repostar** e feed "Para você" ordenado por relevância (interações e idade do post).
+
+## Contas de demonstração (`npm run seed` no backend)
+
+Senha de todas: `senha123`. `ana@healthly.dev`, `bruno@healthly.dev`, `carla@healthly.dev` (nutricionista verificada)
+e `admin@healthly.dev`, que vê "Pedidos de verificação" no próprio perfil.
 
 ## Ainda não implementado
 
-O app mostra só dados reais. Stories, mensagens, repostar e compartilhar não aparecem até existirem no backend.
-A tela de notificações fica vazia até a entrega das notificações em tempo real.
+Stories, acompanhamento de progresso e preferências de alertas. O app mostra só dados reais.
 
 ## Estrutura
 
