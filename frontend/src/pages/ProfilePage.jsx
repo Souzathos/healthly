@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -16,13 +16,19 @@ import {
 import { Avatar } from "../components/Avatar";
 import { Icon } from "../components/Icon";
 import { Button } from "../components/Button";
-import { getMe, getProfile } from "../services/users";
+import { getMe, getProfile, toggleFollow } from "../services/users";
 import { getLikedPosts } from "../services/posts";
 import { getSaved } from "../services/saved";
-import { mediaUrl } from "../services/api";
+import { apiError, mediaUrl } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { notify } from "../utils/alerts";
 import { colors } from "../theme/colors";
 import { formatCount, handleFrom, timeAgo } from "../utils/format";
+
+const TAB_LOADERS = {
+  curtidas: getLikedPosts,
+  salvos: getSaved,
+};
 
 export const ProfilePage = () => {
   const navigation = useNavigation();
@@ -30,52 +36,143 @@ export const ProfilePage = () => {
   const { user: me, signOut } = useAuth();
   const paramUserId = route.params?.userId;
   const isOwn = !paramUserId || paramUserId === me?.id;
+  const profileKey = isOwn ? "me" : String(paramUserId);
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [following, setFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
 
   const [tab, setTab] = useState("posts");
-  const [liked, setLiked] = useState(null); // null = ainda não carregado
-  const [saved, setSaved] = useState(null);
+  // null = ainda não carregado
+  const [tabData, setTabData] = useState({ curtidas: null, salvos: null });
   const [tabLoading, setTabLoading] = useState(false);
+  const [tabError, setTabError] = useState(false);
+
+  const loadedKey = useRef(null);
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  const requestRef = useRef(0);
+
+  const loadTab = useCallback(async (which) => {
+    setTabLoading(true);
+    setTabError(false);
+    try {
+      const data = await TAB_LOADERS[which]();
+      setTabData((current) => ({ ...current, [which]: data }));
+    } catch {
+      setTabError(true);
+    } finally {
+      setTabLoading(false);
+    }
+  }, []);
+
+  // Outro perfil: começa do zero. Mesmo perfil (ex.: voltando de um post): atualiza sem perder a aba.
+  const loadProfile = useCallback(
+    async (fromScratch) => {
+      const request = ++requestRef.current;
+      if (fromScratch) {
+        setLoading(true);
+        setProfile(null);
+        setTab("posts");
+        setTabData({ curtidas: null, salvos: null });
+      }
+      setError(false);
+
+      try {
+        const data = isOwn ? await getMe() : await getProfile(paramUserId);
+        if (request !== requestRef.current) return;
+        setProfile(data);
+        setFollowing(!!data.isFollowing);
+        loadedKey.current = profileKey;
+
+        if (!fromScratch) {
+          setTabData({ curtidas: null, salvos: null });
+          if (TAB_LOADERS[tabRef.current]) loadTab(tabRef.current);
+        }
+      } catch {
+        // Numa atualização que falha, mantém o perfil que já está na tela
+        if (request === requestRef.current && fromScratch) setError(true);
+      } finally {
+        if (request === requestRef.current) setLoading(false);
+      }
+    },
+    [isOwn, paramUserId, profileKey, loadTab]
+  );
 
   useFocusEffect(
     useCallback(() => {
-      (async () => {
-        setLoading(true);
-        // Reseta abas ao trocar de perfil
-        setTab("posts");
-        setLiked(null);
-        setSaved(null);
-        try {
-          setProfile(isOwn ? await getMe() : await getProfile(paramUserId));
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }, [isOwn, paramUserId])
+      loadProfile(loadedKey.current !== profileKey);
+    }, [loadProfile, profileKey])
   );
 
-  const selectTab = async (next) => {
+  const selectTab = (next) => {
     setTab(next);
-    if (!profile) return;
-    if (next === "curtidas" && liked === null) {
-      setTabLoading(true);
-      try {
-        setLiked(await getLikedPosts());
-      } finally {
-        setTabLoading(false);
-      }
-    } else if (next === "salvos" && saved === null) {
-      setTabLoading(true);
-      try {
-        setSaved(await getSaved());
-      } finally {
-        setTabLoading(false);
-      }
+    if (TAB_LOADERS[next] && tabData[next] === null) loadTab(next);
+  };
+
+  const onToggleFollow = async () => {
+    if (followBusy || !profile) return;
+    const prev = following;
+    const adjustFollowers = (delta) =>
+      setProfile((p) => ({ ...p, followersCount: p.followersCount + delta }));
+
+    setFollowBusy(true);
+    setFollowing(!prev);
+    adjustFollowers(prev ? -1 : 1);
+    try {
+      await toggleFollow(profile.id);
+    } catch (e) {
+      setFollowing(prev);
+      adjustFollowers(prev ? 1 : -1);
+      notify("Não foi possível seguir", apiError(e));
+    } finally {
+      setFollowBusy(false);
     }
   };
+
+  const header = (
+    <View className="px-4 pb-2 flex-row items-center justify-between">
+      {isOwn ? (
+        <View style={{ width: 24 }} />
+      ) : (
+        <Pressable onPress={() => navigation.goBack()}>
+          <Icon name="back" size={24} color="#fff" />
+        </Pressable>
+      )}
+      <Text className="text-white font-semibold text-base">
+        {profile ? handleFrom(profile) : ""}
+      </Text>
+      {isOwn ? (
+        <Pressable onPress={signOut}>
+          <Icon name="logout" size={22} color="#fff" />
+        </Pressable>
+      ) : (
+        <View style={{ width: 24 }} />
+      )}
+    </View>
+  );
+
+  if (error && !profile) {
+    return (
+      <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
+        {header}
+        <View className="flex-1 items-center justify-center px-8">
+          <Icon name="user" size={40} color="#333" />
+          <Text className="text-muted mt-3 text-center">
+            Não foi possível carregar o perfil.
+          </Text>
+          <Pressable
+            onPress={() => loadProfile(true)}
+            className="mt-4 px-5 py-2.5 rounded-full border border-accent"
+          >
+            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading || !profile) {
     return (
@@ -101,8 +198,7 @@ export const ProfilePage = () => {
       : []),
   ];
 
-  const currentList =
-    tab === "posts" ? profile.posts : tab === "curtidas" ? liked : saved;
+  const currentList = tab === "posts" ? profile.posts : tabData[tab];
 
   const emptyLabel =
     tab === "posts"
@@ -159,28 +255,43 @@ export const ProfilePage = () => {
     </Pressable>
   );
 
+  const renderTabContent = () => {
+    if (tabLoading && tab !== "posts") {
+      return (
+        <View className="items-center py-16">
+          <ActivityIndicator color={colors.accent} />
+        </View>
+      );
+    }
+    if (tabError && tab !== "posts") {
+      return (
+        <View className="items-center py-16 px-8">
+          <Text className="text-muted text-center">
+            Não foi possível carregar esta aba.
+          </Text>
+          <Pressable
+            onPress={() => loadTab(tab)}
+            className="mt-4 px-5 py-2.5 rounded-full border border-accent"
+          >
+            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    if (currentList && currentList.length > 0) {
+      return currentList.map(renderPostRow);
+    }
+    return (
+      <View className="items-center py-16">
+        <Icon name="grid" size={40} color="#333" />
+        <Text className="text-muted mt-3">{emptyLabel}</Text>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
-      {/* Header */}
-      <View className="px-4 pb-2 flex-row items-center justify-between">
-        {isOwn ? (
-          <View style={{ width: 24 }} />
-        ) : (
-          <Pressable onPress={() => navigation.goBack()}>
-            <Icon name="back" size={24} color="#fff" />
-          </Pressable>
-        )}
-        <Text className="text-white font-semibold text-base">
-          {handleFrom(profile)}
-        </Text>
-        {isOwn ? (
-          <Pressable onPress={signOut}>
-            <Icon name="logout" size={22} color="#fff" />
-          </Pressable>
-        ) : (
-          <View style={{ width: 24 }} />
-        )}
-      </View>
+      {header}
 
       <ScrollView className="flex-1">
         {/* Cover */}
@@ -228,7 +339,8 @@ export const ProfilePage = () => {
                 <Button
                   label={following ? "Seguindo" : "Seguir"}
                   variant={following ? "outline" : "accent"}
-                  onPress={() => setFollowing((f) => !f)}
+                  onPress={onToggleFollow}
+                  disabled={followBusy}
                 />
               </View>
             )}
@@ -286,18 +398,7 @@ export const ProfilePage = () => {
           })}
         </View>
 
-        {tabLoading ? (
-          <View className="items-center py-16">
-            <ActivityIndicator color={colors.accent} />
-          </View>
-        ) : currentList && currentList.length > 0 ? (
-          currentList.map(renderPostRow)
-        ) : (
-          <View className="items-center py-16">
-            <Icon name="grid" size={40} color="#333" />
-            <Text className="text-muted mt-3">{emptyLabel}</Text>
-          </View>
-        )}
+        {renderTabContent()}
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>

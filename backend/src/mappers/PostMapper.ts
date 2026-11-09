@@ -39,9 +39,9 @@ export class PostMapper {
         }
     }
 
-    // Só os metadados: o arquivo é servido por /post/media/:mediaId
+    // Só os metadados, na ordem de envio: o arquivo é servido por /post/media/:mediaId
     private static images(post: Post) {
-        return (post.images ?? []).map(image => ({
+        return [...(post.images ?? [])].sort((a, b) => a.position - b.position).map(image => ({
             id: image.id,
             position: image.position,
             mimeType: image.mimeType

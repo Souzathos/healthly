@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,37 +13,128 @@ import { Logo } from "../components/Logo";
 import { Icon } from "../components/Icon";
 import { StoryRow } from "../components/StoryRow";
 import { PostCard } from "../components/PostCard";
-import { getFeed } from "../services/posts";
+import { FEED_PAGE_SIZE, getExplore, getFeed } from "../services/posts";
 import { colors } from "../theme/colors";
+
+const TABS = [
+  ["foryou", "Para você"],
+  ["following", "Seguindo"],
+];
+
+const LOADERS = {
+  foryou: getExplore,
+  following: getFeed,
+};
 
 export const HomePage = () => {
   const navigation = useNavigation();
+  const [tab, setTab] = useState("foryou");
   const [posts, setPosts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [tab, setTab] = useState("foryou");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(false);
 
-  const load = useCallback(async () => {
+  // Descarta respostas antigas quando a aba muda no meio de uma requisição
+  const requestRef = useRef(0);
+
+  const loadFirstPage = useCallback(async (which) => {
+    const request = ++requestRef.current;
+    setError(false);
     try {
-      const data = await getFeed(1);
+      const data = await LOADERS[which](1);
+      if (request !== requestRef.current) return;
       setPosts(data);
+      setPage(1);
+      setHasMore(data.length === FEED_PAGE_SIZE);
     } catch {
-      setPosts([]);
+      if (request === requestRef.current) setError(true);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (request === requestRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      load();
-    }, [load])
+      loadFirstPage(tab);
+    }, [loadFirstPage, tab])
   );
+
+  const loadMore = async () => {
+    if (!hasMore || loading || loadingMore || error) return;
+    const request = requestRef.current;
+    setLoadingMore(true);
+    try {
+      const data = await LOADERS[tab](page + 1);
+      if (request !== requestRef.current) return;
+      // Um post novo pode deslocar a paginação e repetir itens
+      setPosts((current) => {
+        const ids = new Set(current.map((p) => p.id));
+        return [...current, ...data.filter((p) => !ids.has(p.id))];
+      });
+      setPage((p) => p + 1);
+      setHasMore(data.length === FEED_PAGE_SIZE);
+    } catch {
+      // Mantém o que já carregou; a próxima rolagem tenta de novo
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const selectTab = (next) => {
+    if (next === tab) return;
+    setTab(next);
+    setPosts([]);
+    setHasMore(true);
+    setLoading(true);
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
-    load();
+    loadFirstPage(tab);
+  };
+
+  const retry = () => {
+    setLoading(true);
+    loadFirstPage(tab);
+  };
+
+  const renderEmpty = () => {
+    if (loading) {
+      return (
+        <View className="py-20 items-center">
+          <ActivityIndicator color={colors.accent} />
+        </View>
+      );
+    }
+    if (error) {
+      return (
+        <View className="py-20 items-center px-8">
+          <Icon name="x" size={40} color="#333" />
+          <Text className="text-muted mt-3 text-center">
+            Não foi possível carregar o feed.
+          </Text>
+          <Pressable onPress={retry} className="mt-4 px-5 py-2.5 rounded-full border border-accent">
+            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    return (
+      <View className="py-20 items-center px-8">
+        <Icon name="home" size={40} color="#333" />
+        <Text className="text-muted mt-3 text-center">
+          {tab === "following"
+            ? "Siga pessoas para ver posts aqui. Encontre alguém na busca."
+            : "Nada por aqui ainda. Crie o primeiro post no botão +!"}
+        </Text>
+      </View>
+    );
   };
 
   return (
@@ -72,6 +163,8 @@ export const HomePage = () => {
             }
           />
         )}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -83,48 +176,37 @@ export const HomePage = () => {
           <View>
             <StoryRow onAdd={() => navigation.navigate("Create")} />
             <View className="flex-row border-b border-[#1a1a1a]">
-              {[
-                ["foryou", "Para você"],
-                ["following", "Seguindo"],
-              ].map(([k, l]) => (
+              {TABS.map(([key, label]) => (
                 <Pressable
-                  key={k}
-                  onPress={() => setTab(k)}
+                  key={key}
+                  onPress={() => selectTab(key)}
                   className="flex-1 py-3 items-center"
                   style={{
                     borderBottomWidth: 2,
-                    borderBottomColor: tab === k ? colors.accent : "transparent",
+                    borderBottomColor: tab === key ? colors.accent : "transparent",
                   }}
                 >
                   <Text
                     className="text-sm"
                     style={{
-                      color: tab === k ? "#fff" : "#666",
-                      fontWeight: tab === k ? "600" : "400",
+                      color: tab === key ? "#fff" : "#666",
+                      fontWeight: tab === key ? "600" : "400",
                     }}
                   >
-                    {l}
+                    {label}
                   </Text>
                 </Pressable>
               ))}
             </View>
           </View>
         }
-        ListEmptyComponent={
-          loading ? (
-            <View className="py-20 items-center">
+        ListEmptyComponent={renderEmpty}
+        ListFooterComponent={
+          loadingMore ? (
+            <View className="py-6 items-center">
               <ActivityIndicator color={colors.accent} />
             </View>
-          ) : (
-            <View className="py-20 items-center px-8">
-              <Icon name="home" size={40} color="#333" />
-              <Text className="text-muted mt-3 text-center">
-                {tab === "following"
-                  ? "Siga pessoas para ver posts aqui."
-                  : "Nada no feed ainda. Crie o primeiro post no botão +!"}
-              </Text>
-            </View>
-          )
+          ) : null
         }
       />
     </SafeAreaView>

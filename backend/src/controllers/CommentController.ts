@@ -12,7 +12,7 @@ export class CommentController {
     }
 
     async listByPost(req: Request, res: Response) {
-        const comments = await this.service.listByPost(Number(req.params.postId), getPagination(req))
+        const comments = await this.service.listByPost(Number(req.params.postId), getPagination(req), req.user?.id)
 
         return res.status(200).json(comments)
     }

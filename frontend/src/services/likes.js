@@ -4,3 +4,8 @@ import { api } from "./api";
 export function togglePostLike(postId) {
   return api(`/like/post/${postId}`, { method: "POST" });
 }
+
+// Curte/descurte um comentário (toggle). Retorna { liked: boolean }.
+export function toggleCommentLike(commentId) {
+  return api(`/like/comment/${commentId}`, { method: "POST" });
+}

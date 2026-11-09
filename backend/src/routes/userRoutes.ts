@@ -3,6 +3,7 @@ import { AuthController } from "../controllers/AuthController";
 import { UserController } from "../controllers/UserController";
 import { validateBody, validateIds } from "../middlewares/validate";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { optionalAuthMiddleware } from "../middlewares/optionalAuthMiddleware";
 import { loginLimiter, registerLimiter } from "../middlewares/rateLimit";
 import { LoginDTO, RegisterDTO, UpdateUserDTO } from "../dtos/user";
 
@@ -14,10 +15,11 @@ userRoutes.post('/register', registerLimiter, validateBody(RegisterDTO), auth.re
 userRoutes.post('/login', loginLimiter, validateBody(LoginDTO), auth.login.bind(auth))
 
 // Rotas do usuário logado (antes de /:id para não haver conflito)
+userRoutes.get('/search', optionalAuthMiddleware, user.search.bind(user))
 userRoutes.get('/me', authMiddleware, user.me.bind(user))
 userRoutes.put('/update', authMiddleware, validateBody(UpdateUserDTO), user.update.bind(user))
 userRoutes.delete('/delete', authMiddleware, user.delete.bind(user))
 
-userRoutes.get('/:id', validateIds('id'), user.profile.bind(user))
+userRoutes.get('/:id', validateIds('id'), optionalAuthMiddleware, user.profile.bind(user))
 
 export default userRoutes

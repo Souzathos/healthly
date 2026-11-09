@@ -1,9 +1,18 @@
 import { Platform } from "react-native";
 import { api } from "./api";
 
+// Seguindo: posts de quem o usuário segue + os próprios.
 export function getFeed(page = 1) {
   return api(`/post/feed?page=${page}`);
 }
+
+// Para você: posts de todo mundo.
+export function getExplore(page = 1) {
+  return api(`/post/explore?page=${page}`);
+}
+
+// Tamanho de página do feed no backend: uma página menor que isso é a última.
+export const FEED_PAGE_SIZE = 10;
 
 export function getPost(id) {
   return api(`/post/${id}`);
@@ -43,5 +52,5 @@ export async function createPost(description, images) {
 }
 
 export function deletePost(id) {
-  return api(`/post/delete/${id}`);
+  return api(`/post/delete/${id}`, { method: "DELETE" });
 }

@@ -4,6 +4,8 @@ import { CommentMapper } from "../mappers/CommentMapper";
 import { Comment } from "../models/Comment";
 import { Post } from "../models/Post";
 import { User } from "../models/User";
+import { CommentLike } from "../models/CommentLike";
+import { In } from "typeorm";
 import { Pagination } from "../utils/pagination";
 import { commentLikeCounts } from "../utils/relationCounts";
 
@@ -11,6 +13,7 @@ export class CommentService {
     private repo = AppDataSource.getRepository(Comment)
     private postRepo = AppDataSource.getRepository(Post)
     private userRepo = AppDataSource.getRepository(User)
+    private likeRepo = AppDataSource.getRepository(CommentLike)
 
     async create(text: string, postId: number, userId: number) {
         const post = await this.postRepo.findOneBy({id: postId})
@@ -21,10 +24,10 @@ export class CommentService {
 
         const saved = await this.repo.save(this.repo.create({text, post, user}))
 
-        return CommentMapper.toResponse(saved, 0)
+        return CommentMapper.toResponse(saved, {likesCount: 0, likedByMe: false})
     }
 
-    async listByPost(postId: number, {skip, take}: Pagination) {
+    async listByPost(postId: number, {skip, take}: Pagination, viewerId?: number) {
         const comments = await this.repo.createQueryBuilder('comment')
             .leftJoinAndSelect('comment.user', 'user')
             .where('comment.postId = :postId', {postId})
@@ -33,9 +36,26 @@ export class CommentService {
             .take(take)
             .getMany()
 
-        const likes = await commentLikeCounts(comments.map(c => c.id))
+        const ids = comments.map(c => c.id)
+        const [likes, liked] = await Promise.all([
+            commentLikeCounts(ids),
+            this.likedByViewer(ids, viewerId)
+        ])
 
-        return comments.map(c => CommentMapper.toResponse(c, likes.get(c.id) ?? 0))
+        return comments.map(c => CommentMapper.toResponse(c, {
+            likesCount: likes.get(c.id) ?? 0,
+            likedByMe: liked.has(c.id)
+        }))
+    }
+
+    private async likedByViewer(commentIds: number[], viewerId?: number) {
+        if(!viewerId || commentIds.length === 0) return new Set<number>()
+
+        const likes = await this.likeRepo.find({
+            where: {user: {id: viewerId}, comment: {id: In(commentIds)}},
+            relations: {comment: true}
+        })
+        return new Set(likes.map(l => l.comment.id))
     }
 
     async delete(commentId: number, userId: number) {

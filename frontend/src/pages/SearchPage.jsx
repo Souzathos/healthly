@@ -1,44 +1,157 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Input } from "../components/Input";
 import { Icon } from "../components/Icon";
+import { Avatar } from "../components/Avatar";
+import { searchUsers, toggleFollow } from "../services/users";
+import { apiError } from "../services/api";
+import { notify } from "../utils/alerts";
 import { colors } from "../theme/colors";
+import { handleFrom } from "../utils/format";
 
-// Tela apenas visual/mock (busca real fora do escopo desta entrega).
-const TRENDING = ["#lowcarb", "#treino", "#hiit", "#receitas", "#yoga", "#proteina"];
-const SUGGESTED = [
-  { name: "Ana Fitness", handle: "@anafitness", followers: "12.4k" },
-  { name: "Carlos Treino", handle: "@carlostreino", followers: "8.9k" },
-  { name: "Julia Saúde", handle: "@juliasaude", followers: "5.2k" },
-  { name: "Pedro Nutrição", handle: "@pedronut", followers: "3.1k" },
-];
-
-function MiniAvatar({ name }) {
-  const ini = name
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  return (
-    <View
-      style={{
-        width: 46,
-        height: 46,
-        borderRadius: 23,
-        backgroundColor: colors.accent,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Text style={{ color: "#080808", fontWeight: "700" }}>{ini}</Text>
-    </View>
-  );
-}
+const DEBOUNCE_MS = 300;
 
 export const SearchPage = () => {
+  const navigation = useNavigation();
   const [q, setQ] = useState("");
+  const [results, setResults] = useState([]);
+  // idle: nada digitado | loading | done | error
+  const [status, setStatus] = useState("idle");
+  const [busyIds, setBusyIds] = useState(new Set());
+
+  // Só a última busca digitada pode atualizar a lista
+  const requestRef = useRef(0);
+
+  const runSearch = useCallback(async (term) => {
+    const request = ++requestRef.current;
+    try {
+      const data = await searchUsers(term);
+      if (request !== requestRef.current) return;
+      setResults(data);
+      setStatus("done");
+    } catch {
+      if (request === requestRef.current) setStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    const term = q.trim();
+    if (!term) {
+      requestRef.current++;
+      setResults([]);
+      setStatus("idle");
+      return;
+    }
+    setStatus("loading");
+    const timer = setTimeout(() => runSearch(term), DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [q, runSearch]);
+
+  // Ao voltar de um perfil, o estado de seguir pode ter mudado lá
+  const latestQuery = useRef(q);
+  latestQuery.current = q;
+  useFocusEffect(
+    useCallback(() => {
+      const term = latestQuery.current.trim();
+      if (term) runSearch(term);
+    }, [runSearch])
+  );
+
+  const onToggleFollow = async (user) => {
+    if (busyIds.has(user.id)) return;
+    const setFollowing = (value) =>
+      setResults((list) =>
+        list.map((u) => (u.id === user.id ? { ...u, isFollowing: value } : u))
+      );
+
+    setBusyIds((ids) => new Set(ids).add(user.id));
+    setFollowing(!user.isFollowing);
+    try {
+      const res = await toggleFollow(user.id);
+      setFollowing(res.following);
+    } catch (e) {
+      setFollowing(user.isFollowing);
+      notify("Não foi possível seguir", apiError(e));
+    } finally {
+      setBusyIds((ids) => {
+        const next = new Set(ids);
+        next.delete(user.id);
+        return next;
+      });
+    }
+  };
+
+  const renderEmpty = () => {
+    if (status === "loading") {
+      return (
+        <View className="py-16 items-center">
+          <ActivityIndicator color={colors.accent} />
+        </View>
+      );
+    }
+    const message = {
+      idle: "Encontre pessoas pelo nome ou @usuário.",
+      done: `Ninguém encontrado para "${q.trim()}".`,
+      error: "Não foi possível buscar agora. Tente de novo.",
+    }[status];
+
+    return (
+      <View className="py-16 items-center px-8">
+        <Icon name={status === "error" ? "x" : "search"} size={40} color="#333" />
+        <Text className="text-muted mt-3 text-center">{message}</Text>
+        {status === "error" ? (
+          <Pressable
+            onPress={() => runSearch(q.trim())}
+            className="mt-4 px-5 py-2.5 rounded-full border border-accent"
+          >
+            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  };
+
+  const renderUser = ({ item }) => (
+    <Pressable
+      onPress={() => navigation.navigate("UserProfile", { userId: item.id })}
+      className="flex-row items-center justify-between px-4 py-3"
+    >
+      <View className="flex-row items-center gap-3 flex-1">
+        <Avatar user={item} size={46} />
+        <View className="flex-1">
+          <Text className="text-white font-semibold text-sm" numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text className="text-[#555] text-xs" numberOfLines={1}>
+            {handleFrom(item)}
+            {item.goal ? ` · ${item.goal}` : ""}
+          </Text>
+        </View>
+      </View>
+      <Pressable
+        onPress={() => onToggleFollow(item)}
+        disabled={busyIds.has(item.id)}
+        className={`rounded-full px-4 py-2 border ${
+          item.isFollowing ? "bg-transparent border-[#333]" : "bg-surface2 border-accent"
+        }`}
+      >
+        <Text
+          className="text-[13px] font-semibold"
+          style={{ color: item.isFollowing ? "#fff" : colors.accent }}
+        >
+          {item.isFollowing ? "Seguindo" : "Seguir"}
+        </Text>
+      </Pressable>
+    </Pressable>
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
@@ -48,50 +161,24 @@ export const SearchPage = () => {
             <Icon name="search" size={18} color="#555" />
           </View>
           <Input
-            placeholder="Buscar pessoas, treinos, dietas..."
+            placeholder="Buscar pessoas..."
             value={q}
             onChangeText={setQ}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
             style={{ paddingLeft: 42 }}
           />
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-4">
-        <Text className="text-white text-[15px] font-semibold mb-3">🔥 Trending</Text>
-        <View className="flex-row flex-wrap gap-2 mb-6">
-          {TRENDING.map((t) => (
-            <Pressable
-              key={t}
-              className="rounded-full px-3.5 py-2 bg-surface2 border border-line"
-            >
-              <Text className="text-accent text-[13px] font-semibold">{t}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text className="text-white text-[15px] font-semibold mb-3">
-          Pessoas sugeridas
-        </Text>
-        {SUGGESTED.map((u) => (
-          <View
-            key={u.handle}
-            className="flex-row items-center justify-between mb-4"
-          >
-            <View className="flex-row items-center gap-3">
-              <MiniAvatar name={u.name} />
-              <View>
-                <Text className="text-white font-semibold text-sm">{u.name}</Text>
-                <Text className="text-[#555] text-xs">
-                  {u.handle} · {u.followers} seguidores
-                </Text>
-              </View>
-            </View>
-            <Pressable className="rounded-full px-4 py-2 bg-surface2 border border-accent">
-              <Text className="text-accent text-[13px] font-semibold">Seguir</Text>
-            </Pressable>
-          </View>
-        ))}
-      </ScrollView>
+      <FlatList
+        data={status === "done" ? results : []}
+        keyExtractor={(u) => String(u.id)}
+        renderItem={renderUser}
+        ListEmptyComponent={renderEmpty}
+        keyboardShouldPersistTaps="handled"
+      />
     </SafeAreaView>
   );
 };

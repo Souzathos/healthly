@@ -12,6 +12,7 @@ const post = new PostController()
 
 // Rotas de leitura (as específicas vêm antes de /:id para não haver conflito)
 postRoutes.get('/feed', authMiddleware, post.feed.bind(post))
+postRoutes.get('/explore', authMiddleware, post.explore.bind(post))
 postRoutes.get('/media/:mediaId', validateIds('mediaId'), post.getMedia.bind(post))
 postRoutes.get('/liked', authMiddleware, post.likedByUser.bind(post))
 postRoutes.get('/user/:userId', validateIds('userId'), optionalAuthMiddleware, post.getByUser.bind(post))

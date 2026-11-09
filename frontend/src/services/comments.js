@@ -12,3 +12,8 @@ export function createComment(postId, text) {
     body: JSON.stringify({ text }),
   });
 }
+
+// Só o autor do comentário pode excluir.
+export function deleteComment(commentId) {
+  return api(`/comment/${commentId}`, { method: "DELETE" });
+}
