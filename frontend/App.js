@@ -3,6 +3,7 @@ import React from "react";
 import { View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { PortalHost } from "@rn-primitives/portal";
 import { NavigationContainer, DarkTheme } from "@react-navigation/native";
 import {
   useFonts,
@@ -13,16 +14,18 @@ import {
 } from "@expo-google-fonts/dm-sans";
 import { AuthProvider } from "./src/context/AuthContext";
 import { RootNavigator } from "./src/navigation/RootNavigator";
+import { ConfirmProvider } from "./src/components/ConfirmDialog";
+import { colors } from "./src/theme/colors";
 
 const navTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: "#080808",
-    card: "#080808",
-    text: "#ffffff",
-    primary: "#c8f53a",
-    border: "#1a1a1a",
+    background: colors.dark,
+    card: colors.dark,
+    text: colors.text,
+    primary: colors.accent,
+    border: colors.divider,
   },
 };
 
@@ -35,17 +38,20 @@ export default function App() {
   });
 
   if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: "#080808" }} />;
+    return <View style={{ flex: 1, backgroundColor: colors.dark }} />;
   }
 
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
       <AuthProvider>
-        <NavigationContainer theme={navTheme}>
-          <RootNavigator />
-        </NavigationContainer>
+        <ConfirmProvider>
+          <NavigationContainer theme={navTheme}>
+            <RootNavigator />
+          </NavigationContainer>
+        </ConfirmProvider>
       </AuthProvider>
+      <PortalHost />
     </SafeAreaProvider>
   );
 }

@@ -3,16 +3,17 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
   Image,
   ScrollView,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { Avatar } from "../components/Avatar";
-import { Icon } from "../components/Icon";
+import { IconButton } from "../components/IconButton";
+import { HeaderAction, ScreenHeader } from "../components/ScreenHeader";
 import { useAuth } from "../context/AuthContext";
 import { createPost } from "../services/posts";
 import { apiError } from "../services/api";
@@ -20,7 +21,6 @@ import { notify } from "../utils/alerts";
 import { colors } from "../theme/colors";
 
 const MAX = 280;
-const TAGS = ["#treino", "#dieta", "#receita", "#motivação", "#yoga"];
 
 export const CreatePostPage = () => {
   const navigation = useNavigation();
@@ -72,31 +72,18 @@ export const CreatePostPage = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-dark">
-      {/* Header */}
-      <View className="px-4 pb-3 flex-row items-center justify-between border-b border-[#1a1a1a]">
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text className="text-muted text-[15px]">Cancelar</Text>
-        </Pressable>
-        <Text className="text-white font-semibold text-base">Novo post</Text>
-        <Pressable
-          onPress={submit}
-          disabled={!canPost || loading}
-          className="rounded-full px-4 py-2"
-          style={{ backgroundColor: canPost ? colors.accent : "#2a2a2a" }}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#080808" />
-          ) : (
-            <Text
-              className="font-bold text-sm"
-              style={{ color: canPost ? "#080808" : "#555" }}
-            >
-              Postar
-            </Text>
-          )}
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="Novo post"
+        left={<HeaderAction label="Cancelar" muted onPress={() => navigation.goBack()} />}
+        right={
+          <HeaderAction label="Postar" onPress={submit} disabled={!canPost} loading={loading} />
+        }
+      />
 
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
       <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
         <View className="flex-row gap-3">
           <Avatar user={user} size={44} />
@@ -105,9 +92,9 @@ export const CreatePostPage = () => {
               value={text}
               onChangeText={(t) => t.length <= MAX && setText(t)}
               placeholder="O que você está fazendo pela sua saúde hoje?"
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.mutedDark}
               multiline
-              className="text-white text-base"
+              className={`text-white text-base ${Platform.OS === "web" ? "outline-none" : ""}`}
               style={{ minHeight: 120, textAlignVertical: "top", lineHeight: 24 }}
             />
 
@@ -119,20 +106,15 @@ export const CreatePostPage = () => {
                       source={{ uri: img.uri }}
                       style={{ width: 100, height: 100, borderRadius: 12 }}
                     />
-                    <Pressable
+                    <IconButton
+                      name="x"
+                      label="Remover imagem"
+                      size="sm"
                       onPress={() =>
                         setImages((prev) => prev.filter((_, idx) => idx !== i))
                       }
-                      className="absolute top-1 right-1 items-center justify-center"
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
-                        backgroundColor: "rgba(0,0,0,0.7)",
-                      }}
-                    >
-                      <Icon name="x" size={12} color="#fff" />
-                    </Pressable>
+                      className="absolute -top-2 -right-2"
+                    />
                   </View>
                 ))}
               </View>
@@ -140,30 +122,16 @@ export const CreatePostPage = () => {
           </View>
         </View>
 
-        {/* Sugestões de tags */}
-        <View className="flex-row flex-wrap gap-2 mt-4">
-          {TAGS.map((t) => (
-            <Pressable
-              key={t}
-              onPress={() => setText((s) => (s + " " + t).trim().slice(0, MAX))}
-              className="rounded-full px-3 py-1.5 bg-surface2 border border-line"
-            >
-              <Text className="text-muted text-xs">{t}</Text>
-            </Pressable>
-          ))}
-        </View>
       </ScrollView>
 
       {/* Toolbar */}
-      <View className="px-4 py-3 border-t border-[#1a1a1a] flex-row items-center justify-between">
-        <View className="flex-row gap-5">
-          <Pressable onPress={pickImage}>
-            <Icon name="image" size={22} color={colors.accent} />
-          </Pressable>
-          <Pressable onPress={pickImage}>
-            <Icon name="camera" size={22} color={colors.muted} />
-          </Pressable>
-        </View>
+      <View className="pl-1.5 pr-4 py-1 border-t border-divider flex-row items-center justify-between">
+        <IconButton
+          name="image"
+          label="Adicionar imagens"
+          color={colors.accent}
+          onPress={pickImage}
+        />
         <Text
           className="text-xs font-semibold"
           style={{
@@ -172,12 +140,13 @@ export const CreatePostPage = () => {
                 ? colors.danger
                 : text.length > MAX * 0.8
                 ? colors.accent
-                : "#555",
+                : colors.mutedDark,
           }}
         >
           {MAX - text.length}
         </Text>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

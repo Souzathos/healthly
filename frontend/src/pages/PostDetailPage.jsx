@@ -13,20 +13,26 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Avatar } from "../components/Avatar";
+import { useConfirm } from "../components/ConfirmDialog";
+import { EmptyState } from "../components/EmptyState";
 import { Icon } from "../components/Icon";
+import { IconButton } from "../components/IconButton";
+import { PostActions } from "../components/PostActions";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { deletePost, getPost } from "../services/posts";
 import { toggleCommentLike, togglePostLike } from "../services/likes";
 import { toggleSaved } from "../services/saved";
 import { listComments, createComment, deleteComment } from "../services/comments";
 import { apiError, mediaUrl } from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { confirmAction, notify } from "../utils/alerts";
+import { notify } from "../utils/alerts";
 import { colors } from "../theme/colors";
 import { formatCount, timeAgo, handleFrom } from "../utils/format";
 
 export const PostDetailPage = ({ route, navigation }) => {
   const { postId } = route.params;
   const { user: me } = useAuth();
+  const confirm = useConfirm();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -152,23 +158,27 @@ export const PostDetailPage = ({ route, navigation }) => {
     });
 
   const onDeleteComment = (comment) =>
-    confirmAction("Excluir comentário", "Deseja excluir este comentário?", () =>
-      withCommentBusy(comment.id, async () => {
-        try {
-          await deleteComment(comment.id);
-          setComments((list) => list.filter((c) => c.id !== comment.id));
-        } catch (e) {
-          notify("Não foi possível excluir", apiError(e));
-        }
-      }),
-      "Excluir"
-    );
+    confirm({
+      title: "Excluir comentário",
+      message: "Deseja excluir este comentário?",
+      confirmLabel: "Excluir",
+      onConfirm: () =>
+        withCommentBusy(comment.id, async () => {
+          try {
+            await deleteComment(comment.id);
+            setComments((list) => list.filter((c) => c.id !== comment.id));
+          } catch (e) {
+            notify("Não foi possível excluir", apiError(e));
+          }
+        }),
+    });
 
   const onDeletePost = () =>
-    confirmAction(
-      "Excluir post",
-      "Esta ação é permanente. Deseja continuar?",
-      async () => {
+    confirm({
+      title: "Excluir post",
+      message: "Esta ação é permanente. Deseja continuar?",
+      confirmLabel: "Excluir",
+      onConfirm: async () => {
         try {
           await deletePost(postId);
           navigation.goBack();
@@ -176,46 +186,20 @@ export const PostDetailPage = ({ route, navigation }) => {
           notify("Não foi possível excluir", apiError(e));
         }
       },
-      "Excluir"
-    );
-
-  const actions = [
-    {
-      icon: "comment",
-      color: colors.muted,
-      onPress: () => inputRef.current?.focus(),
-    },
-    { icon: "repeat", color: colors.muted },
-    {
-      icon: liked ? "heartFill" : "heart",
-      color: liked ? colors.danger : colors.muted,
-      onPress: onToggleLike,
-    },
-    {
-      icon: "bookmark",
-      color: saved ? colors.accent : colors.muted,
-      onPress: onToggleSave,
-    },
-    { icon: "share", color: colors.muted },
-  ];
+    });
 
   const renderBody = () => {
     if (error && !post) {
       return (
-        <View className="flex-1 items-center justify-center px-8">
-          <Icon name="x" size={40} color="#333" />
-          <Text className="text-muted mt-3 text-center">
-            Não foi possível carregar o post. Ele pode ter sido excluído.
-          </Text>
-          <Pressable
-            onPress={() => {
+        <View className="flex-1 justify-center">
+          <EmptyState
+            icon="x"
+            message="Não foi possível carregar o post. Ele pode ter sido excluído."
+            onRetry={() => {
               setLoading(true);
               load();
             }}
-            className="mt-4 px-5 py-2.5 rounded-full border border-accent"
-          >
-            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
-          </Pressable>
+          />
         </View>
       );
     }
@@ -243,14 +227,14 @@ export const PostDetailPage = ({ route, navigation }) => {
                     {post.user?.name}
                   </Text>
                 </View>
-                <Text className="text-[#555] text-[13px]">
+                <Text className="text-mutedDark text-[13px]">
                   {post.user ? handleFrom(post.user) : ""} · {timeAgo(post.createdAt)}
                 </Text>
               </View>
             </View>
 
             {post.description ? (
-              <Text className="text-[#e0e0e0] text-base leading-7 mb-3">
+              <Text className="text-soft text-base leading-7 mb-3">
                 {post.description}
               </Text>
             ) : null}
@@ -260,53 +244,51 @@ export const PostDetailPage = ({ route, navigation }) => {
                 key={img.id}
                 source={{ uri: mediaUrl(img.id) }}
                 className="w-full rounded-2xl mb-3"
-                style={{ height: 260, backgroundColor: "#1a1a1a" }}
+                style={{ height: 260, backgroundColor: colors.divider }}
                 resizeMode="cover"
               />
             ))}
 
-            <View className="flex-row gap-5 py-3 border-t border-b border-[#1a1a1a]">
+            <View className="flex-row gap-5 py-3 border-t border-b border-divider">
               <Text className="text-muted text-[13px]">
                 <Text className="text-white font-bold">
                   {formatCount(likesCount)}
                 </Text>{" "}
-                Curtidas
+                {likesCount === 1 ? "Curtida" : "Curtidas"}
               </Text>
               <Text className="text-muted text-[13px]">
                 <Text className="text-white font-bold">
                   {formatCount(comments.length)}
                 </Text>{" "}
-                Comentários
+                {comments.length === 1 ? "Comentário" : "Comentários"}
               </Text>
             </View>
 
-            <View className="flex-row mt-1">
-              {actions.map((a, i) => (
-                <Pressable
-                  key={i}
-                  onPress={a.onPress}
-                  className="flex-1 items-center py-2.5"
-                >
-                  <Icon name={a.icon} size={20} color={a.color} />
-                </Pressable>
-              ))}
+            <View className="mt-1">
+              <PostActions
+                liked={liked}
+                saved={saved}
+                showCounts={false}
+                onComment={() => inputRef.current?.focus()}
+                onLike={onToggleLike}
+                onSave={onToggleSave}
+              />
             </View>
           </View>
 
           {/* Comentários */}
-          <View className="border-t-4 border-[#111]">
+          <View className="border-t-4 border-surface">
             {comments.length === 0 ? (
-              <View className="items-center px-8 py-10">
-                <Icon name="comment" size={36} color="#333" />
-                <Text className="text-muted mt-3 text-center text-[13px]">
-                  Nenhum comentário ainda. Seja o primeiro!
-                </Text>
-              </View>
+              <EmptyState
+                icon="comment"
+                message="Nenhum comentário ainda. Seja o primeiro!"
+                className="py-10"
+              />
             ) : (
               comments.map((c) => (
                 <View
                   key={c.id}
-                  className="px-4 py-3 border-b border-[#1a1a1a] flex-row gap-3"
+                  className="px-4 py-3 border-b border-divider flex-row gap-3"
                 >
                   <Avatar user={c.user} size={36} onPress={() => openProfile(c.user)} />
                   <View className="flex-1">
@@ -316,34 +298,40 @@ export const PostDetailPage = ({ route, navigation }) => {
                           {c.user?.name || "Usuário"}
                         </Text>
                       </Pressable>
-                      <Text className="text-[#555] text-xs">
+                      <Text className="text-mutedDark text-xs">
                         {c.user ? handleFrom(c.user) : ""} · {timeAgo(c.createdAt)}
                       </Text>
                     </View>
-                    <Text className="text-[#e0e0e0] text-sm leading-6 mt-0.5">
+                    <Text className="text-soft text-sm leading-6 mt-0.5">
                       {c.text}
                     </Text>
                   </View>
-                  <View className="items-center gap-2">
+                  <View className="items-center -mr-2.5 -mt-2.5">
                     <Pressable
                       onPress={() => onToggleCommentLike(c)}
-                      className="items-center"
+                      accessibilityRole="button"
+                      accessibilityLabel={c.likedByMe ? "Descurtir comentário" : "Curtir comentário"}
+                      className="min-w-11 min-h-11 items-center justify-center"
                     >
                       <Icon
                         name={c.likedByMe ? "heartFill" : "heart"}
-                        size={16}
+                        size="sm"
                         color={c.likedByMe ? colors.danger : colors.muted}
                       />
                       {c.likesCount > 0 ? (
-                        <Text className="text-[#555] text-[11px] mt-0.5">
+                        <Text className="text-mutedDark text-[11px] mt-0.5">
                           {formatCount(c.likesCount)}
                         </Text>
                       ) : null}
                     </Pressable>
                     {c.user?.id === me?.id ? (
-                      <Pressable onPress={() => onDeleteComment(c)}>
-                        <Icon name="trash" size={16} color={colors.muted} />
-                      </Pressable>
+                      <IconButton
+                        name="trash"
+                        label="Excluir comentário"
+                        size="sm"
+                        color={colors.muted}
+                        onPress={() => onDeleteComment(c)}
+                      />
                     ) : null}
                   </View>
                 </View>
@@ -353,32 +341,34 @@ export const PostDetailPage = ({ route, navigation }) => {
         </ScrollView>
 
         {/* Campo de novo comentário */}
-        <View className="flex-row items-center gap-2 px-4 py-2.5 border-t border-[#1a1a1a] bg-dark">
+        <View className="flex-row items-center gap-2 px-4 py-2.5 border-t border-divider bg-dark">
           <TextInput
             ref={inputRef}
             value={commentText}
             onChangeText={setCommentText}
             placeholder="Escreva um comentário..."
-            placeholderTextColor="#555"
-            className="flex-1 text-white text-sm px-3 py-2 rounded-full bg-surface2"
+            placeholderTextColor={colors.mutedDark}
+            className={`flex-1 text-white text-sm px-3 py-2 rounded-full bg-surface2 ${Platform.OS === "web" ? "outline-none" : ""}`}
             maxLength={500}
             multiline
           />
           <Pressable
             onPress={onSendComment}
             disabled={sending || !commentText.trim()}
+            accessibilityRole="button"
+            accessibilityLabel="Enviar comentário"
             className="w-10 h-10 items-center justify-center rounded-full"
             style={{
-              backgroundColor: commentText.trim() ? colors.accent : "#1a1a1a",
+              backgroundColor: commentText.trim() ? colors.accent : colors.divider,
             }}
           >
             {sending ? (
-              <ActivityIndicator size="small" color="#080808" />
+              <ActivityIndicator size="small" color={colors.dark} />
             ) : (
               <Icon
                 name="send"
-                size={18}
-                color={commentText.trim() ? "#080808" : "#555"}
+                size="md"
+                color={commentText.trim() ? colors.dark : colors.mutedDark}
               />
             )}
           </Pressable>
@@ -389,19 +379,21 @@ export const PostDetailPage = ({ route, navigation }) => {
 
   return (
     <SafeAreaView className="flex-1 bg-dark">
-      <View className="px-4 pb-3 flex-row items-center justify-between border-b border-[#1a1a1a]">
-        <View className="flex-row items-center gap-3">
-          <Pressable onPress={() => navigation.goBack()}>
-            <Icon name="back" size={24} color="#fff" />
-          </Pressable>
-          <Text className="text-white font-semibold text-base">Post</Text>
-        </View>
-        {isOwnPost ? (
-          <Pressable onPress={onDeletePost}>
-            <Icon name="trash" size={20} color={colors.muted} />
-          </Pressable>
-        ) : null}
-      </View>
+      <ScreenHeader
+        title="Post"
+        onBack={() => navigation.goBack()}
+        right={
+          isOwnPost ? (
+            <IconButton
+              name="trash"
+              label="Excluir post"
+              size="md"
+              color={colors.muted}
+              onPress={onDeletePost}
+            />
+          ) : undefined
+        }
+      />
 
       {renderBody()}
     </SafeAreaView>

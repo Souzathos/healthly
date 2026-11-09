@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { colorFromId, initials } from "../utils/format";
+import { colors } from "../theme/colors";
 
 export const Avatar = ({ user, size = 44, onPress }) => {
   const bg = colorFromId(user?.id, user?.name || undefined);
@@ -17,7 +18,7 @@ export const Avatar = ({ user, size = 44, onPress }) => {
     >
       <Text
         style={{
-          color: "#080808",
+          color: colors.dark,
           fontWeight: "700",
           fontSize: size * 0.35,
         }}

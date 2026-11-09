@@ -8,21 +8,3 @@ export function notify(title, message) {
   }
   Alert.alert(title, message);
 }
-
-// Confirmação (Cancelar / Confirmar) — no web o Alert.alert do RN não dispara
-// os callbacks dos botões, então usamos window.confirm.
-export function confirmAction(
-  title,
-  message,
-  onConfirm,
-  confirmLabel = "Confirmar"
-) {
-  if (Platform.OS === "web") {
-    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
-    return;
-  }
-  Alert.alert(title, message, [
-    { text: "Cancelar", style: "cancel" },
-    { text: confirmLabel, style: "destructive", onPress: onConfirm },
-  ]);
-}

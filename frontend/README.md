@@ -33,9 +33,10 @@ Suba o backend antes: na pasta `../backend`, `npm run dev` (precisa de MySQL —
 - **Perfil:** abas Posts / Curtidas / Salvos.
 - **Sessão:** token expirado ou inválido leva de volta ao login.
 
-## Apenas visual / mock
+## Ainda não implementado
 
-Stories, notificações, mensagens, repostar e compartilhar.
+O app mostra só dados reais. Stories, mensagens, repostar e compartilhar não aparecem até existirem no backend.
+A tela de notificações fica vazia até a entrega das notificações em tempo real.
 
 ## Estrutura
 
@@ -44,8 +45,9 @@ src/
   services/     # api.js (cliente fetch central) + funções por recurso (auth, users, posts)
   context/      # AuthContext (sessão + persistência)
   navigation/   # RootNavigator, AuthStack, AppTabs, BottomTabBar
-  components/   # Avatar, Button, Input, Icon, PostCard, StoryRow, Logo...
+  components/   # Avatar, Button, Input, Icon, IconButton, ScreenHeader, TabStrip, PostActions, EmptyState, ConfirmDialog...
+  components/ui/ # Componentes adaptados do React Native Reusables
   pages/        # Splash, Login, Signup, Home, Create, Profile, EditProfile, PostDetail, Search, Notifications (.jsx)
-  theme/        # cores do design system
+  theme/        # tokens.js: cores e tamanhos de ícone (fonte única, também lida pelo Tailwind)
   utils/        # formatação (datas, contagens, iniciais)
 ```

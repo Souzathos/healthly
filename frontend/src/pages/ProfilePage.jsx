@@ -14,8 +14,13 @@ import {
   useFocusEffect,
 } from "@react-navigation/native";
 import { Avatar } from "../components/Avatar";
-import { Icon } from "../components/Icon";
 import { Button } from "../components/Button";
+import { EmptyState } from "../components/EmptyState";
+import { IconButton } from "../components/IconButton";
+import { ScreenHeader } from "../components/ScreenHeader";
+import { TabStrip } from "../components/TabStrip";
+import { Badge } from "../components/ui/badge";
+import { Text as BadgeText } from "../components/ui/text";
 import { getMe, getProfile, toggleFollow } from "../services/users";
 import { getLikedPosts } from "../services/posts";
 import { getSaved } from "../services/saved";
@@ -133,42 +138,28 @@ export const ProfilePage = () => {
   };
 
   const header = (
-    <View className="px-4 pb-2 flex-row items-center justify-between">
-      {isOwn ? (
-        <View style={{ width: 24 }} />
-      ) : (
-        <Pressable onPress={() => navigation.goBack()}>
-          <Icon name="back" size={24} color="#fff" />
-        </Pressable>
-      )}
-      <Text className="text-white font-semibold text-base">
-        {profile ? handleFrom(profile) : ""}
-      </Text>
-      {isOwn ? (
-        <Pressable onPress={signOut}>
-          <Icon name="logout" size={22} color="#fff" />
-        </Pressable>
-      ) : (
-        <View style={{ width: 24 }} />
-      )}
-    </View>
+    <ScreenHeader
+      title={profile ? handleFrom(profile) : ""}
+      border={false}
+      onBack={isOwn ? undefined : () => navigation.goBack()}
+      right={
+        isOwn ? (
+          <IconButton name="logout" label="Sair" onPress={signOut} />
+        ) : undefined
+      }
+    />
   );
 
   if (error && !profile) {
     return (
       <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
         {header}
-        <View className="flex-1 items-center justify-center px-8">
-          <Icon name="user" size={40} color="#333" />
-          <Text className="text-muted mt-3 text-center">
-            Não foi possível carregar o perfil.
-          </Text>
-          <Pressable
-            onPress={() => loadProfile(true)}
-            className="mt-4 px-5 py-2.5 rounded-full border border-accent"
-          >
-            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
-          </Pressable>
+        <View className="flex-1 justify-center">
+          <EmptyState
+            icon="user"
+            message="Não foi possível carregar o perfil."
+            onRetry={() => loadProfile(true)}
+          />
         </View>
       </SafeAreaView>
     );
@@ -211,7 +202,7 @@ export const ProfilePage = () => {
     <Pressable
       key={post.id}
       onPress={() => navigation.navigate("PostDetail", { postId: post.id })}
-      className="px-4 py-4 border-b border-[#1a1a1a]"
+      className="px-4 py-4 border-b border-divider"
     >
       {tab !== "posts" ? (
         <View className="flex-row items-center gap-2 mb-1.5">
@@ -219,13 +210,13 @@ export const ProfilePage = () => {
           <Text className="text-white text-xs font-semibold">
             {post.user?.name}
           </Text>
-          <Text className="text-[#555] text-xs">
+          <Text className="text-mutedDark text-xs">
             {post.user ? handleFrom(post.user) : ""}
           </Text>
         </View>
       ) : null}
       {post.description ? (
-        <Text className="text-[#e0e0e0] text-sm leading-6">
+        <Text className="text-soft text-sm leading-6">
           {post.description}
         </Text>
       ) : null}
@@ -233,24 +224,24 @@ export const ProfilePage = () => {
         <Image
           source={{ uri: mediaUrl(post.images[0].id) }}
           className="w-full rounded-2xl mt-3"
-          style={{ height: 180, backgroundColor: "#1a1a1a" }}
+          style={{ height: 180, backgroundColor: colors.divider }}
           resizeMode="cover"
         />
       ) : null}
       <View className="flex-row gap-5 mt-2.5">
-        <Text className="text-[#555] text-xs">
+        <Text className="text-mutedDark text-xs">
           <Text className="text-white font-semibold">
             {formatCount(post.likesCount)}
           </Text>{" "}
-          curtidas
+          {post.likesCount === 1 ? "curtida" : "curtidas"}
         </Text>
-        <Text className="text-[#555] text-xs">
+        <Text className="text-mutedDark text-xs">
           <Text className="text-white font-semibold">
             {formatCount(post.commentsCount)}
           </Text>{" "}
-          respostas
+          {post.commentsCount === 1 ? "resposta" : "respostas"}
         </Text>
-        <Text className="text-[#555] text-xs">{timeAgo(post.createdAt)}</Text>
+        <Text className="text-mutedDark text-xs">{timeAgo(post.createdAt)}</Text>
       </View>
     </Pressable>
   );
@@ -265,28 +256,17 @@ export const ProfilePage = () => {
     }
     if (tabError && tab !== "posts") {
       return (
-        <View className="items-center py-16 px-8">
-          <Text className="text-muted text-center">
-            Não foi possível carregar esta aba.
-          </Text>
-          <Pressable
-            onPress={() => loadTab(tab)}
-            className="mt-4 px-5 py-2.5 rounded-full border border-accent"
-          >
-            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          icon="x"
+          message="Não foi possível carregar esta aba."
+          onRetry={() => loadTab(tab)}
+        />
       );
     }
     if (currentList && currentList.length > 0) {
       return currentList.map(renderPostRow);
     }
-    return (
-      <View className="items-center py-16">
-        <Icon name="grid" size={40} color="#333" />
-        <Text className="text-muted mt-3">{emptyLabel}</Text>
-      </View>
-    );
+    return <EmptyState icon="grid" message={emptyLabel} />;
   };
 
   return (
@@ -301,7 +281,7 @@ export const ProfilePage = () => {
               height: "100%",
               backgroundColor: "rgba(200,245,58,0.08)",
               borderBottomWidth: 1,
-              borderBottomColor: "#1a1a1a",
+              borderBottomColor: colors.divider,
             }}
           />
         </View>
@@ -311,7 +291,7 @@ export const ProfilePage = () => {
             <View
               style={{
                 padding: 3,
-                backgroundColor: "#080808",
+                backgroundColor: colors.dark,
                 borderRadius: 44,
                 alignSelf: "flex-start",
               }}
@@ -323,80 +303,48 @@ export const ProfilePage = () => {
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
               <Text className="text-white text-xl font-bold">{profile.name}</Text>
-              <Text className="text-[#555] text-[13px]">{handleFrom(profile)}</Text>
+              <Text className="text-mutedDark text-[13px]">{handleFrom(profile)}</Text>
             </View>
             {isOwn ? (
-              <Pressable
+              <Button
+                label="Editar perfil"
+                variant="ghost"
+                size="sm"
                 onPress={() => navigation.navigate("EditProfile")}
-                className="rounded-full px-5 py-2 bg-surface2 border border-[#333]"
-              >
-                <Text className="text-white text-sm font-semibold">
-                  Editar perfil
-                </Text>
-              </Pressable>
+              />
             ) : (
-              <View style={{ width: 130 }}>
-                <Button
-                  label={following ? "Seguindo" : "Seguir"}
-                  variant={following ? "outline" : "accent"}
-                  onPress={onToggleFollow}
-                  disabled={followBusy}
-                />
-              </View>
+              <Button
+                label={following ? "Seguindo" : "Seguir"}
+                variant={following ? "ghost" : "accent"}
+                size="sm"
+                onPress={onToggleFollow}
+                disabled={followBusy}
+              />
             )}
           </View>
 
           {profile.bio ? (
-            <Text className="text-[#ccc] text-sm leading-6 mt-3">{profile.bio}</Text>
+            <Text className="text-soft text-sm leading-6 mt-3">{profile.bio}</Text>
           ) : null}
           {profile.goal ? (
             <View className="flex-row mt-2">
-              <View
-                className="rounded-full px-3 py-1"
-                style={{ backgroundColor: "rgba(200,245,58,0.12)" }}
-              >
-                <Text className="text-accent text-xs font-semibold">
-                  {profile.goal}
-                </Text>
-              </View>
+              <Badge>
+                <BadgeText>{profile.goal}</BadgeText>
+              </Badge>
             </View>
           ) : null}
 
-          <View className="flex-row gap-6 mt-4 pb-4 border-b border-[#1a1a1a]">
+          <View className="flex-row gap-6 mt-4 pb-4 border-b border-divider">
             {stats.map(([v, l]) => (
               <View key={l}>
                 <Text className="text-white font-bold text-base">{v}</Text>
-                <Text className="text-[#555] text-xs">{l}</Text>
+                <Text className="text-mutedDark text-xs">{l}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        {/* Abas */}
-        <View className="flex-row border-b border-[#1a1a1a]">
-          {tabs.map((t) => {
-            const active = tab === t.key;
-            return (
-              <Pressable
-                key={t.key}
-                onPress={() => selectTab(t.key)}
-                className="flex-1 items-center py-3"
-                style={
-                  active
-                    ? { borderBottomWidth: 2, borderBottomColor: colors.accent }
-                    : null
-                }
-              >
-                <Text
-                  className="text-sm font-semibold"
-                  style={{ color: active ? "#fff" : "#555" }}
-                >
-                  {t.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <TabStrip tabs={tabs} value={tab} onChange={selectTab} />
 
         {renderTabContent()}
         <View style={{ height: 24 }} />

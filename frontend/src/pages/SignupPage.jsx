@@ -10,7 +10,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
-import { Icon } from "../components/Icon";
+import { IconButton } from "../components/IconButton";
+import { colors } from "../theme/colors";
 import { FormError } from "../components/FormError";
 import { useAuth } from "../context/AuthContext";
 import { apiError } from "../services/api";
@@ -83,18 +84,19 @@ export const SignupPage = ({ navigation }) => {
         className="flex-1 px-7"
       >
         {/* Header com progress */}
-        <View className="flex-row items-center gap-4 pt-2">
-          <Pressable
+        <View className="flex-row items-center gap-2 pt-1">
+          <IconButton
+            name="back"
+            label="Voltar"
             onPress={() => (step === 0 ? navigation.goBack() : setStep((s) => s - 1))}
-          >
-            <Icon name="back" size={24} color="#fff" />
-          </Pressable>
+            className="-ml-2.5"
+          />
           <View className="flex-1 flex-row gap-1.5">
             {[0, 1, 2].map((i) => (
               <View
                 key={i}
                 className="flex-1 h-[3px] rounded-full"
-                style={{ backgroundColor: i <= step ? "#c8f53a" : "#222" }}
+                style={{ backgroundColor: i <= step ? colors.accent : colors.line }}
               />
             ))}
           </View>
@@ -108,7 +110,7 @@ export const SignupPage = ({ navigation }) => {
           <Text className="text-white text-2xl font-bold mb-1.5">
             {titles[step]}
           </Text>
-          <Text className="text-[#666] text-sm mb-7">Passo {step + 1} de 3</Text>
+          <Text className="text-muted text-sm mb-7">Passo {step + 1} de 3</Text>
 
           {step === 0 && (
             <View className="gap-3.5">
@@ -167,13 +169,13 @@ export const SignupPage = ({ navigation }) => {
                     style={{
                       backgroundColor: selected
                         ? "rgba(200,245,58,0.12)"
-                        : "#181818",
+                        : colors.surface2,
                       borderWidth: 1.5,
-                      borderColor: selected ? "#c8f53a" : "#222",
+                      borderColor: selected ? colors.accent : colors.line,
                     }}
                   >
                     <Text className="text-white text-[15px]">{g}</Text>
-                    {selected && <Icon name="check" size={20} color="#c8f53a" />}
+                    {selected && <Icon name="check" size="md" color={colors.accent} />}
                   </Pressable>
                 );
               })}

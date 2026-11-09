@@ -2,25 +2,27 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  Pressable,
   ScrollView,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { Button } from "../components/Button";
+import { useConfirm } from "../components/ConfirmDialog";
 import { Input } from "../components/Input";
-import { Icon } from "../components/Icon";
+import { HeaderAction, ScreenHeader } from "../components/ScreenHeader";
 import { Avatar } from "../components/Avatar";
 import { FormError } from "../components/FormError";
 import { useAuth } from "../context/AuthContext";
 import { updateUser, deleteAccount } from "../services/users";
 import { apiError } from "../services/api";
-import { notify, confirmAction } from "../utils/alerts";
-import { colors } from "../theme/colors";
+import { notify } from "../utils/alerts";
 
 export const EditProfilePage = () => {
   const navigation = useNavigation();
   const { user, setUser, signOut } = useAuth();
+  const confirm = useConfirm();
 
   const [name, setName] = useState(user?.name || "");
   const [handle, setHandle] = useState(user?.handle?.replace(/^@/, "") || "");
@@ -71,31 +73,27 @@ export const EditProfilePage = () => {
   };
 
   const confirmDelete = () => {
-    confirmAction(
-      "Excluir conta",
-      "Esta ação é permanente e apaga seus posts. Deseja continuar?",
-      doDelete,
-      "Excluir"
-    );
+    confirm({
+      title: "Excluir conta",
+      message: "Esta ação é permanente e apaga seus posts. Deseja continuar?",
+      confirmLabel: "Excluir",
+      onConfirm: doDelete,
+    });
   };
 
   return (
     <SafeAreaView className="flex-1 bg-dark">
-      <View className="px-4 pb-3 flex-row items-center justify-between border-b border-[#1a1a1a]">
-        <Pressable onPress={() => navigation.goBack()}>
-          <Icon name="back" size={24} color="#fff" />
-        </Pressable>
-        <Text className="text-white font-semibold text-base">Editar perfil</Text>
-        <Pressable onPress={save} disabled={saving}>
-          {saving ? (
-            <ActivityIndicator size="small" color={colors.accent} />
-          ) : (
-            <Text className="text-accent font-bold text-sm">Salvar</Text>
-          )}
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="Editar perfil"
+        onBack={() => navigation.goBack()}
+        right={<HeaderAction label="Salvar" onPress={save} loading={saving} />}
+      />
 
-      <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+      <ScrollView className="flex-1 px-4" keyboardShouldPersistTaps="handled">
         <View className="items-center py-6">
           <Avatar user={{ ...user, name }} size={88} />
         </View>
@@ -142,18 +140,10 @@ export const EditProfilePage = () => {
 
         <View className="mt-10 mb-8">
           <Text className="text-muted text-xs mb-3">Zona de perigo</Text>
-          <Pressable
-            onPress={confirmDelete}
-            className="rounded-2xl py-4 flex-row items-center justify-center gap-2 border"
-            style={{ borderColor: colors.danger }}
-          >
-            <Icon name="trash" size={18} color={colors.danger} />
-            <Text className="font-semibold" style={{ color: colors.danger }}>
-              Excluir minha conta
-            </Text>
-          </Pressable>
+          <Button label="Excluir minha conta" variant="danger" onPress={confirmDelete} />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

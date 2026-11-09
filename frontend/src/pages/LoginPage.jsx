@@ -51,7 +51,7 @@ export const LoginPage = ({ navigation }) => {
           <View className="items-center gap-3 pt-8">
             <Logo size={60} />
             <Text className="text-accent text-[28px] font-bold">Healthly</Text>
-            <Text className="text-[#666] text-sm text-center">
+            <Text className="text-muted text-sm text-center">
               Sua comunidade de saúde e bem-estar
             </Text>
           </View>
@@ -77,7 +77,7 @@ export const LoginPage = ({ navigation }) => {
 
             <View className="flex-row items-center gap-3 my-1">
               <View className="flex-1 h-px bg-line" />
-              <Text className="text-[#555] text-[13px]">ou</Text>
+              <Text className="text-mutedDark text-[13px]">ou</Text>
               <View className="flex-1 h-px bg-line" />
             </View>
 
@@ -88,9 +88,6 @@ export const LoginPage = ({ navigation }) => {
             />
           </View>
 
-          <Text className="text-[#444] text-xs text-center pb-4">
-            Ao entrar, você concorda com os Termos de Uso
-          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

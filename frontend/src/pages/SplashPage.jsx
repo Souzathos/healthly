@@ -7,7 +7,7 @@ export const SplashPage = () => (
     <View className="items-center gap-4">
       <Logo size={80} />
       <Text className="text-accent text-3xl font-bold">Healthly</Text>
-      <Text className="text-[#555] text-sm">viva melhor, todo dia</Text>
+      <Text className="text-mutedDark text-sm">viva melhor, todo dia</Text>
     </View>
   </View>
 );
