@@ -13,7 +13,10 @@ const envSchema = z.object({
     JWT_SECRET: z.string().min(1),
     JWT_EXPIRES_IN: z.coerce.number().int().positive(),
     PORT: z.coerce.number().int().positive(),
-    CORS_ORIGINS: z.string().default('')
+    CORS_ORIGINS: z.string().default(''),
+    // Banco na nuvem (Aiven): conteúdo do certificado da CA (ca.pem).
+    // Com ele a conexão usa SSL e confere que o servidor é mesmo o do banco.
+    DB_SSL_CA: z.string().optional()
 })
 
 const parsed = envSchema.safeParse(process.env)

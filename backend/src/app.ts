@@ -7,6 +7,9 @@ import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
 
 const app = express()
 
+// No Render o app fica atrás de um proxy: sem isto, o limite de login trataria todo mundo como um só IP
+app.set('trust proxy', 1)
+
 // As imagens são carregadas por outra origem no Expo Web
 app.use(helmet({crossOriginResourcePolicy: {policy: 'cross-origin'}}))
 app.use(cors({origin: allowedOrigins()}))
