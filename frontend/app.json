@@ -28,7 +28,8 @@
         {
           "photosPermission": "O Healthly usa suas fotos para você compartilhar posts."
         }
-      ]
+      ],
+      "expo-status-bar"
     ]
   }
 }

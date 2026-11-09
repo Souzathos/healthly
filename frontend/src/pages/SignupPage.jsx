@@ -10,11 +10,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
+import { Icon } from "../components/Icon";
 import { IconButton } from "../components/IconButton";
 import { colors } from "../theme/colors";
 import { FormError } from "../components/FormError";
 import { useAuth } from "../context/AuthContext";
 import { apiError } from "../services/api";
+import { formatCpf, onlyDigits } from "../utils/cpf";
 
 const GOALS = [
   "🏋️ Ganhar músculo",
@@ -39,21 +41,23 @@ export const SignupPage = ({ navigation }) => {
 
   const titles = ["Crie sua conta", "Acesso seguro", "Seu objetivo"];
 
-  const canAdvance = () => {
-    if (step === 0) return name.trim().length >= 3;
-    if (step === 1)
-      return (
-        email.includes("@") &&
-        password.length >= 6 &&
-        cpf.replace(/\D/g, "").length >= 11
-      );
-    return !!goal;
+  // Mensagem do primeiro problema do passo atual, ou "" se pode avançar
+  const stepError = () => {
+    if (step === 0) return name.trim().length >= 3 ? "" : "O nome deve ter ao menos 3 caracteres.";
+    if (step === 1) {
+      if (!email.includes("@")) return "Informe um e-mail válido.";
+      if (password.length < 6) return "A senha deve ter ao menos 6 caracteres.";
+      if (onlyDigits(cpf).length !== 11) return "O CPF deve ter 11 números.";
+      return "";
+    }
+    return goal ? "" : "Escolha um objetivo para continuar.";
   };
 
   const handleNext = async () => {
     setError("");
-    if (!canAdvance()) {
-      setError("Preencha os campos corretamente para continuar.");
+    const problem = stepError();
+    if (problem) {
+      setError(problem);
       return;
     }
     if (step < 2) {
@@ -66,7 +70,7 @@ export const SignupPage = ({ navigation }) => {
         name: name.trim(),
         email: email.trim(),
         password,
-        cpf: cpf.replace(/\D/g, ""),
+        cpf: onlyDigits(cpf),
         handle: handle ? handle.replace(/^@/, "") : undefined,
         goal: goal || undefined,
       });
@@ -152,7 +156,8 @@ export const SignupPage = ({ navigation }) => {
                 placeholder="000.000.000-00"
                 keyboardType="number-pad"
                 value={cpf}
-                onChangeText={setCpf}
+                onChangeText={(value) => setCpf(formatCpf(value))}
+                maxLength={14}
               />
             </View>
           )}

@@ -2,7 +2,6 @@ import supertest from "supertest";
 import app from "../src/app";
 import { AppDataSource } from "../src/config/data-source";
 import { AuthService } from "../src/services/AuthService";
-import { isValidCpf } from "../src/utils/cpf";
 import { generateToken } from "../src/utils/jwt";
 
 export const api = () => supertest(app)
@@ -12,15 +11,10 @@ export const PNG = Buffer.from('89504e470d0a1a0a', 'hex')
 
 let sequence = 0
 
+// CPF de 11 números diferente a cada chamada
 export function validCpf() {
     sequence += 1
-    const base = String(100000000 + sequence)
-
-    for(let digits = 0; digits < 100; digits++) {
-        const cpf = base + String(digits).padStart(2, '0')
-        if(isValidCpf(cpf)) return cpf
-    }
-    throw new Error('Não foi possível gerar um CPF')
+    return String(10000000000 + sequence)
 }
 
 export async function startDb() {

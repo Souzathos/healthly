@@ -27,11 +27,13 @@ describe('auth', () => {
         assert.equal(second.body.message, 'CPF já cadastrado')
     })
 
-    it('recusa CPF inválido com o motivo por campo', async () => {
-        const res = await api().post('/user/register').send(payload({cpf: '12345678901'}))
+    it('aceita qualquer CPF com 11 números e recusa os incompletos', async () => {
+        const ok = await api().post('/user/register').send(payload({cpf: '123.456.789-00'}))
+        assert.equal(ok.status, 201)
 
-        assert.equal(res.status, 400)
-        assert.equal(res.body.errors[0].mensagem, 'CPF inválido')
+        const short = await api().post('/user/register').send(payload({email: 'b@test.com', cpf: '123.456'}))
+        assert.equal(short.status, 400)
+        assert.equal(short.body.errors[0].mensagem, 'O CPF deve ter 11 números')
     })
 
     it('recusa e-mail e @usuário repetidos com 409', async () => {

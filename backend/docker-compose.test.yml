@@ -1,4 +1,7 @@
 # Banco descartável para os testes: os dados ficam em memória
+# Nome próprio: sem ele, o "down" dos testes removeria a rede do banco de desenvolvimento
+name: healthly-test
+
 services:
   db-test:
     image: mysql:8.0
