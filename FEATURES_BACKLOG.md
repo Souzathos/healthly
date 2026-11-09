@@ -128,3 +128,21 @@ Hoje `StoryRow.jsx` é mock. Backend:
 ### RF15 — Compartilhar / repost
 - Entidade `Repost` (`reposts`): `@ManyToOne User`, `@ManyToOne Post`, `@Unique(['user','post'])`,
   `@CreateDateColumn`. Incluir reposts no feed. (No artigo, "estende curtir".)
+
+---
+
+## Status (novembro de 2026)
+
+| Requisito | Status |
+|---|---|
+| RF03, RF14, RF20 (Fase 0) | ✅ Feito |
+| RF06, RF12, RF09 (verificação profissional) | ✅ Feito: pedido com foto do CRN/CREF, painel do admin e selo |
+| RF19 Hashtags, RF08 Busca, RF18 Dieta | ✅ Feito: tabelas `hashtags`/`post_hashtags`, `Post.diet`, `GET /post/search`, `/post/hashtag/:tag`, `/post/trending-hashtags` |
+| RF11 Mensagens diretas | ✅ Feito com socket.io (`conversations`, `messages`) |
+| RF07 Notificações | ✅ Feito com socket.io (`notifications`) |
+| RF15 Repostar | ✅ Feito (`reposts`); repost leva o post ao feed "Seguindo" de quem segue |
+| RF17 Recomendação | ✅ Versão simples: "Para você" ordena por curtidas, comentários, reposts e idade |
+| RF10/RF13 Stories | ⏳ Trabalho futuro |
+| RF05 Progresso | ⏳ Trabalho futuro |
+| RF16 Configurar alertas | ⏳ Trabalho futuro |
+

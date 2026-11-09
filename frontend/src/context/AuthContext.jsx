@@ -19,6 +19,18 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const me = await getMe();
+      // Dados da conta, sem os posts e as contagens do perfil
+      const { posts, postsCount, followersCount, followingCount, ...u } = me;
+      setUserState(u);
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(u));
+    } catch {
+      // ignora
+    }
+  }, []);
+
   // Restaura sessão salva ao abrir o app
   useEffect(() => {
     (async () => {
@@ -28,6 +40,8 @@ export const AuthProvider = ({ children }) => {
         if (savedToken) {
           setToken(savedToken);
           if (savedUser) setUserState(JSON.parse(savedUser));
+          // Atualiza dados que podem ter mudado, como o selo de verificado
+          refreshUser();
         }
       } catch {
         // ignora
@@ -35,7 +49,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [refreshUser]);
 
   const persist = async (t, u) => {
     setToken(t);
@@ -67,23 +81,6 @@ export const AuthProvider = ({ children }) => {
     return () => setUnauthorizedHandler(null);
   }, [signOut]);
 
-  const refreshUser = useCallback(async () => {
-    try {
-      const me = await getMe();
-      const u = {
-        id: me.id,
-        name: me.name,
-        email: me.email,
-        handle: me.handle,
-        bio: me.bio,
-        goal: me.goal,
-      };
-      setUserState(u);
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(u));
-    } catch {
-      // ignora
-    }
-  }, []);
 
   const setUser = useCallback((u) => {
     setUserState(u);

@@ -9,6 +9,11 @@ import { CreatePostPage } from "../pages/CreatePostPage";
 import { PostDetailPage } from "../pages/PostDetailPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { EditProfilePage } from "../pages/EditProfilePage";
+import { ConversationsPage } from "../pages/ConversationsPage";
+import { ChatPage } from "../pages/ChatPage";
+import { ProfessionalRequestPage } from "../pages/ProfessionalRequestPage";
+import { AdminRequestsPage } from "../pages/AdminRequestsPage";
+import { HashtagPage } from "../pages/HashtagPage";
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +40,11 @@ export const RootNavigator = () => {
       <Stack.Screen name="PostDetail" component={PostDetailPage} />
       <Stack.Screen name="UserProfile" component={ProfilePage} />
       <Stack.Screen name="EditProfile" component={EditProfilePage} />
+      <Stack.Screen name="Conversations" component={ConversationsPage} />
+      <Stack.Screen name="Chat" component={ChatPage} />
+      <Stack.Screen name="ProfessionalRequest" component={ProfessionalRequestPage} />
+      <Stack.Screen name="AdminRequests" component={AdminRequestsPage} />
+      <Stack.Screen name="Hashtag" component={HashtagPage} />
     </Stack.Navigator>
   );
 };

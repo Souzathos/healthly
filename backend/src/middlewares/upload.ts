@@ -46,11 +46,18 @@ function uploadErrorResponse(error: unknown) {
 }
 
 // Responde erros de upload em JSON, no mesmo formato das demais rotas
-export function uploadImages(req: Request, res: Response, next: NextFunction) {
-    upload.array('images', MAX_IMAGES_PER_POST)(req, res, (error: unknown) => {
-        if (!error) return next()
+function handle(middleware: ReturnType<typeof upload.any>) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        middleware(req, res, (error: unknown) => {
+            if (!error) return next()
 
-        const {status, message} = uploadErrorResponse(error)
-        return res.status(status).json({message})
-    })
+            const {status, message} = uploadErrorResponse(error)
+            return res.status(status).json({message})
+        })
+    }
 }
+
+export const uploadImages = handle(upload.array('images', MAX_IMAGES_PER_POST))
+
+// Foto do documento profissional (CRN/CREF)
+export const uploadDocument = handle(upload.single('document'))

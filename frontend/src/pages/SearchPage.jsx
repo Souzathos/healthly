@@ -11,6 +11,9 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
+import { UserName } from "../components/UserName";
+import { PostSearch } from "../components/PostSearch";
+import { TabStrip } from "../components/TabStrip";
 import { Avatar } from "../components/Avatar";
 import { searchUsers, toggleFollow } from "../services/users";
 import { apiError } from "../services/api";
@@ -20,9 +23,15 @@ import { handleFrom } from "../utils/format";
 
 const DEBOUNCE_MS = 300;
 
+const MODES = [
+  { key: "people", label: "Pessoas" },
+  { key: "posts", label: "Posts" },
+];
+
 export const SearchPage = () => {
   const navigation = useNavigation();
   const [q, setQ] = useState("");
+  const [mode, setMode] = useState("people");
   const [results, setResults] = useState([]);
   // idle: nada digitado | loading | done | error
   const [status, setStatus] = useState("idle");
@@ -127,9 +136,7 @@ export const SearchPage = () => {
       <View className="flex-row items-center gap-3 flex-1">
         <Avatar user={item} size={46} />
         <View className="flex-1">
-          <Text className="text-white font-semibold text-sm" numberOfLines={1}>
-            {item.name}
-          </Text>
+          <UserName user={item} />
           <Text className="text-mutedDark text-xs" numberOfLines={1}>
             {handleFrom(item)}
             {item.goal ? ` · ${item.goal}` : ""}
@@ -150,7 +157,7 @@ export const SearchPage = () => {
     <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
       <View className="px-4 pt-1 pb-3">
         <Input
-          placeholder="Buscar pessoas..."
+          placeholder={mode === "people" ? "Buscar pessoas..." : "Buscar posts..."}
           leftIcon="search"
           value={q}
           onChangeText={setQ}
@@ -160,13 +167,21 @@ export const SearchPage = () => {
         />
       </View>
 
-      <FlatList
-        data={status === "done" ? results : []}
-        keyExtractor={(u) => String(u.id)}
-        renderItem={renderUser}
-        ListEmptyComponent={renderEmpty}
-        keyboardShouldPersistTaps="handled"
-      />
+      <View className="mb-3">
+        <TabStrip tabs={MODES} value={mode} onChange={setMode} />
+      </View>
+
+      {mode === "people" ? (
+        <FlatList
+          data={status === "done" ? results : []}
+          keyExtractor={(u) => String(u.id)}
+          renderItem={renderUser}
+          ListEmptyComponent={renderEmpty}
+          keyboardShouldPersistTaps="handled"
+        />
+      ) : (
+        <PostSearch q={q} />
+      )}
     </SafeAreaView>
   );
 };

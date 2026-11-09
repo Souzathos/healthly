@@ -19,10 +19,13 @@ import { EmptyState } from "../components/EmptyState";
 import { IconButton } from "../components/IconButton";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { TabStrip } from "../components/TabStrip";
+import { UserName } from "../components/UserName";
+import { PROFESSIONAL_TYPES } from "../services/professional";
 import { Badge } from "../components/ui/badge";
 import { Text as BadgeText } from "../components/ui/text";
 import { getMe, getProfile, toggleFollow } from "../services/users";
 import { getLikedPosts } from "../services/posts";
+import { openConversation } from "../services/messages";
 import { getSaved } from "../services/saved";
 import { apiError, mediaUrl } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -48,6 +51,7 @@ export const ProfilePage = () => {
   const [error, setError] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
 
   const [tab, setTab] = useState("posts");
   // null = ainda não carregado
@@ -134,6 +138,19 @@ export const ProfilePage = () => {
       notify("Não foi possível seguir", apiError(e));
     } finally {
       setFollowBusy(false);
+    }
+  };
+
+  const onOpenChat = async () => {
+    if (openingChat || !profile) return;
+    setOpeningChat(true);
+    try {
+      const conversation = await openConversation(profile.id);
+      navigation.navigate("Chat", { conversationId: conversation.id, user: conversation.user });
+    } catch (e) {
+      notify("Não foi possível abrir a conversa", apiError(e));
+    } finally {
+      setOpeningChat(false);
     }
   };
 
@@ -302,7 +319,7 @@ export const ProfilePage = () => {
 
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
-              <Text className="text-white text-xl font-bold">{profile.name}</Text>
+              <UserName user={profile} className="text-xl font-bold" badgeSize={20} />
               <Text className="text-mutedDark text-[13px]">{handleFrom(profile)}</Text>
             </View>
             {isOwn ? (
@@ -313,18 +330,50 @@ export const ProfilePage = () => {
                 onPress={() => navigation.navigate("EditProfile")}
               />
             ) : (
-              <Button
-                label={following ? "Seguindo" : "Seguir"}
-                variant={following ? "ghost" : "accent"}
-                size="sm"
-                onPress={onToggleFollow}
-                disabled={followBusy}
-              />
+              <View className="flex-row gap-2">
+                <Button
+                  label="Mensagem"
+                  variant="ghost"
+                  size="sm"
+                  onPress={onOpenChat}
+                  loading={openingChat}
+                />
+                <Button
+                  label={following ? "Seguindo" : "Seguir"}
+                  variant={following ? "ghost" : "accent"}
+                  size="sm"
+                  onPress={onToggleFollow}
+                  disabled={followBusy}
+                />
+              </View>
             )}
           </View>
 
           {profile.bio ? (
             <Text className="text-soft text-sm leading-6 mt-3">{profile.bio}</Text>
+          ) : null}
+          {profile.isVerified && PROFESSIONAL_TYPES[profile.professionalType] ? (
+            <Text className="text-accent text-[13px] font-semibold mt-2">
+              {PROFESSIONAL_TYPES[profile.professionalType].label} verificado
+            </Text>
+          ) : null}
+          {isOwn && me?.role === "admin" ? (
+            <Button
+              label="Pedidos de verificação"
+              variant="outline"
+              size="sm"
+              className="mt-3 self-start"
+              onPress={() => navigation.navigate("AdminRequests")}
+            />
+          ) : null}
+          {isOwn && !profile.isVerified && me?.role !== "admin" ? (
+            <Button
+              label="Sou profissional de saúde"
+              variant="ghost"
+              size="sm"
+              className="mt-3 self-start"
+              onPress={() => navigation.navigate("ProfessionalRequest")}
+            />
           ) : null}
           {profile.goal ? (
             <View className="flex-row mt-2">

@@ -13,6 +13,7 @@ import {
   DMSans_700Bold,
 } from "@expo-google-fonts/dm-sans";
 import { AuthProvider } from "./src/context/AuthContext";
+import { RealtimeProvider } from "./src/context/RealtimeContext";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import { ConfirmProvider } from "./src/components/ConfirmDialog";
 import { colors } from "./src/theme/colors";
@@ -45,11 +46,13 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style="light" />
       <AuthProvider>
-        <ConfirmProvider>
-          <NavigationContainer theme={navTheme}>
-            <RootNavigator />
-          </NavigationContainer>
-        </ConfirmProvider>
+        <RealtimeProvider>
+          <ConfirmProvider>
+            <NavigationContainer theme={navTheme}>
+              <RootNavigator />
+            </NavigationContainer>
+          </ConfirmProvider>
+        </RealtimeProvider>
       </AuthProvider>
       <PortalHost />
     </SafeAreaProvider>

@@ -13,6 +13,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { Avatar } from "../components/Avatar";
 import { IconButton } from "../components/IconButton";
+import { Chip } from "../components/Chip";
+import { DIETS } from "../utils/diets";
 import { HeaderAction, ScreenHeader } from "../components/ScreenHeader";
 import { useAuth } from "../context/AuthContext";
 import { createPost } from "../services/posts";
@@ -27,6 +29,7 @@ export const CreatePostPage = () => {
   const { user } = useAuth();
   const [text, setText] = useState("");
   const [images, setImages] = useState([]);
+  const [diet, setDiet] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const pickImage = async () => {
@@ -59,7 +62,7 @@ export const CreatePostPage = () => {
     if (!text.trim() && images.length === 0) return;
     setLoading(true);
     try {
-      await createPost(text.trim(), images);
+      await createPost(text.trim(), images, diet);
       navigation.goBack();
     } catch (e) {
       notify("Erro ao postar", apiError(e));
@@ -122,6 +125,18 @@ export const CreatePostPage = () => {
           </View>
         </View>
 
+        {/* Dieta é opcional: tocar de novo desmarca */}
+        <Text className="text-muted text-[13px] mt-6 mb-2">Dieta (opcional)</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {Object.entries(DIETS).map(([key, label]) => (
+            <Chip
+              key={key}
+              label={label}
+              selected={diet === key}
+              onPress={() => setDiet((current) => (current === key ? null : key))}
+            />
+          ))}
+        </View>
       </ScrollView>
 
       {/* Toolbar */}

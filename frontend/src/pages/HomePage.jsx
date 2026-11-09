@@ -10,6 +10,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Logo } from "../components/Logo";
 import { EmptyState } from "../components/EmptyState";
+import { IconButton } from "../components/IconButton";
+import { useRealtime } from "../context/RealtimeContext";
 import { TabStrip } from "../components/TabStrip";
 import { PostCard } from "../components/PostCard";
 import { FEED_PAGE_SIZE, getExplore, getFeed } from "../services/posts";
@@ -27,6 +29,7 @@ const LOADERS = {
 
 export const HomePage = () => {
   const navigation = useNavigation();
+  const { unreadMessages } = useRealtime();
   const [tab, setTab] = useState("foryou");
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
@@ -131,9 +134,18 @@ export const HomePage = () => {
   return (
     <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
       {/* Header */}
-      <View className="h-12 px-4 flex-row items-center gap-2">
-        <Logo size={30} />
-        <Text className="text-accent text-xl font-bold">Healthly</Text>
+      <View className="h-12 pl-4 pr-1.5 flex-row items-center justify-between">
+        <View className="flex-row items-center gap-2">
+          <Logo size={30} />
+          <Text className="text-accent text-xl font-bold">Healthly</Text>
+        </View>
+        <IconButton
+          name="mail"
+          label="Mensagens"
+          color={colors.muted}
+          badge={unreadMessages}
+          onPress={() => navigation.navigate("Conversations")}
+        />
       </View>
 
       <FlatList
