@@ -125,19 +125,12 @@ export class MessageService {
         const ids = conversations.map(c => c.id)
         if(ids.length === 0) return []
 
-        // Última mensagem de cada conversa e quantas a pessoa ainda não leu
-        const lastIds = await this.messageRepo.createQueryBuilder('message')
-            .select('MAX(message.id)', 'id')
-            .where('message.conversationId IN (:...ids)', {ids})
-            .groupBy('message.conversationId')
-            .getRawMany()
-
-        const lastMessages = lastIds.length
-            ? await this.messageRepo.find({
-                where: {id: In(lastIds.map(row => Number(row.id)))},
-                relations: {sender: true, conversation: true}
-            })
-            : []
+        // Última mensagem de cada conversa, pela data de envio: no TiDB o id não segue a ordem de criação
+        const lastMessages = (await Promise.all(conversations.map(c => this.messageRepo.findOne({
+            where: {conversation: {id: c.id}},
+            relations: {sender: true, conversation: true},
+            order: {createdAt: 'DESC', id: 'DESC'}
+        })))).filter((m): m is Message => m !== null)
 
         const unreadRows = await this.messageRepo.createQueryBuilder('message')
             .select('message.conversationId', 'conversationId')

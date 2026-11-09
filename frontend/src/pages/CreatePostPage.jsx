@@ -40,7 +40,7 @@ export const CreatePostPage = () => {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      quality: 0.8,
+      quality: 0.6,
       allowsMultipleSelection: true,
       selectionLimit: 4,
     });

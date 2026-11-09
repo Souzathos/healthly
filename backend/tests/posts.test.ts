@@ -43,7 +43,7 @@ describe('posts', () => {
         assert.equal((await request).status, 400)
     })
 
-    it('recusa imagem acima de 10 MB', async () => {
+    it('recusa imagem acima de 5 MB', async () => {
         const user = await createUser()
 
         const res = await upload(user.auth).attach('images', Buffer.alloc(11 * 1024 * 1024), png)

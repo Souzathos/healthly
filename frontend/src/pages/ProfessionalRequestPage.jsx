@@ -72,7 +72,7 @@ export const ProfessionalRequestPage = () => {
       notify("Permissão", "Precisamos de acesso às suas fotos para enviar o documento.");
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.6 });
     if (!result.canceled) {
       const asset = result.assets[0];
       setImage({ uri: asset.uri, mimeType: asset.mimeType, fileName: asset.fileName || undefined });

@@ -35,7 +35,9 @@ function timeOf(iso) {
 // Junta mensagens novas sem repetir: a mesma mensagem chega pela resposta do envio e pelo socket
 function merge(current, incoming) {
   const ids = new Set(current.map((m) => m.id));
-  return [...current, ...incoming.filter((m) => !ids.has(m.id))].sort((a, b) => b.id - a.id);
+  return [...current, ...incoming.filter((m) => !ids.has(m.id))].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt) || b.id - a.id
+  );
 }
 
 export const ChatPage = ({ route, navigation }) => {

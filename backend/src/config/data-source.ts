@@ -29,7 +29,9 @@ export const AppDataSource = new DataSource({
     password: env.DB_PASSWORD,
     database: env.DB_NAME,
     // Painéis de variáveis às vezes guardam as quebras de linha do certificado como "\n"
-    ssl: env.DB_SSL_CA ? {ca: env.DB_SSL_CA.replace(/\\n/g, '\n')} : undefined,
+    ssl: env.DB_SSL_CA
+        ? {ca: env.DB_SSL_CA.replace(/\\n/g, '\n')}
+        : env.DB_SSL ? {minVersion: 'TLSv1.2'} : undefined,
     entities: [User, Comment, CommentLike, Like, Post, PostMedia, SavedPost, Follow, Notification, Conversation, Message, ProfessionalRequest, Hashtag, Repost],
     migrations: [InitialSchema1793919422850, Notifications1794254176446, Messages1794254752489, Professionals1794255157775, Hashtags1794255471842, Reposts1794255766839],
     migrationsRun: true,

@@ -2,7 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import multer from "multer";
 
 export const MAX_IMAGES_PER_POST = 4
-const MAX_IMAGE_SIZE_MB = 10
+// TiDB Cloud guarda no máximo 6 MB por registro
+const MAX_IMAGE_SIZE_MB = 5
 
 const ALLOWED_IMAGE_TYPES = new Set([
     'image/jpeg',
