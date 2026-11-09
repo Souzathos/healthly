@@ -20,10 +20,11 @@ leitura no backend (flags `likedByMe`/`savedByMe`, endpoint de posts curtidos).
 - **RF03 — Curtir** → `POST /like/post/:postId` ligado em `PostCard`/`PostDetailPage` (otimista).
 - **RF03 — Comentar** → `GET /comment/post/:postId` + `POST /comment/:postId` em `PostDetailPage`.
 - **RF20 — Salvar** (`SavedPost`) → `POST /saved/:postId` + `GET /saved`, com aba "Salvos" no perfil.
-- **Perfil** → abas Posts / Curtidas / Salvos (`GET /post/liked/:userId`, `GET /saved`).
+- **Perfil** → abas Posts / Curtidas / Salvos (`GET /post/liked`, `GET /saved`).
 
-Ainda em wire-up pendente (backend pronto, não ligado): **RF14 — Seguir** (`POST /follow/:userId`,
-`GET /follow/:userId/followers|following`). O botão "Seguir" do perfil segue como estado local.
+- **RF14 — Seguir** → `POST /follow/:userId` no perfil e na busca; `GET /user/:id` devolve `isFollowing`.
+- **Busca de pessoas** (parte de RF08) → `GET /user/search?q=` na tela de busca.
+- **Feed "Para você"** → `GET /post/explore` (todos os posts, cronológico até o RF17).
 
 ---
 

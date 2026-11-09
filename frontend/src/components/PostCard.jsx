@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, Image } from "react-native";
 import { Avatar } from "./Avatar";
 import { Icon } from "./Icon";
@@ -27,6 +27,14 @@ export const PostCard = ({
   const [reposted, setReposted] = useState(false);
   const [busyLike, setBusyLike] = useState(false);
   const [busySave, setBusySave] = useState(false);
+
+  // O mesmo post pode mudar em outra tela (ex.: curtido no detalhe)
+  useEffect(() => {
+    setLiked(!!post.likedByMe);
+    setLikesCount(post.likesCount || 0);
+    setSaved(!!post.savedByMe);
+  }, [post.likedByMe, post.likesCount, post.savedByMe]);
+
   const tags = extractTags(post.description);
   const firstImage = post.images?.[0];
 

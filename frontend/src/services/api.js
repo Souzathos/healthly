@@ -13,6 +13,13 @@ export const API_URL = process.env.EXPO_PUBLIC_API_URL || HOST;
 
 export const TOKEN_KEY = "healthly_token";
 
+// Chamado quando o servidor recusa o token salvo (expirado, conta excluída...).
+let unauthorizedHandler = null;
+
+export function setUnauthorizedHandler(handler) {
+  unauthorizedHandler = handler;
+}
+
 // Cliente HTTP central baseado em fetch.
 // Injeta o token JWT automaticamente e devolve o JSON já parseado.
 export async function api(path, options = {}) {
@@ -30,7 +37,17 @@ export async function api(path, options = {}) {
   });
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    // Resposta fora do padrão (ex.: página de erro de um proxy).
+  }
+
+  // Sem token, um 401 é só senha errada no login: não há sessão para encerrar.
+  if (res.status === 401 && token && unauthorizedHandler) {
+    unauthorizedHandler();
+  }
 
   if (!res.ok) {
     // Erros de validação trazem o motivo por campo em data.errors.

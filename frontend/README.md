@@ -26,12 +26,16 @@ Suba o backend antes: na pasta `../backend`, `npm run dev` (precisa de MySQL —
 
 - **Autenticação:** login e cadastro (wizard de 3 passos), token JWT persistido com AsyncStorage.
 - **CRUD de usuário:** ver perfil (`/user/me`), editar perfil (nome, @usuário, bio, objetivo, senha) e **excluir conta**.
-- **Posts:** criar post com texto + imagens (`expo-image-picker`), feed (`/post/feed`) e detalhe do post.
+- **Posts:** criar post com texto + imagens (`expo-image-picker`), detalhe e exclusão do próprio post.
+- **Feed:** abas "Para você" (`/post/explore`, posts de todo mundo) e "Seguindo" (`/post/feed`), com scroll infinito.
+- **Interações:** curtir e salvar posts; comentar, curtir e excluir comentários.
+- **Pessoas:** busca por nome ou @usuário (`/user/search`) e seguir/deixar de seguir na busca e no perfil.
+- **Perfil:** abas Posts / Curtidas / Salvos.
+- **Sessão:** token expirado ou inválido leva de volta ao login.
 
-## Apenas visual / mock (fora do escopo desta entrega)
+## Apenas visual / mock
 
-Stories, aba "Seguindo", busca, notificações, mensagens e as interações de curtir/repostar/comentar
-(estado local, sem persistir).
+Stories, notificações, mensagens, repostar e compartilhar.
 
 ## Estrutura
 

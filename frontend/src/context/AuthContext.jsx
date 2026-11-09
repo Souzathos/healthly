@@ -6,7 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { TOKEN_KEY } from "../services/api";
+import { TOKEN_KEY, setUnauthorizedHandler } from "../services/api";
 import * as authApi from "../services/auth";
 import { getMe } from "../services/users";
 
@@ -60,6 +60,12 @@ export const AuthProvider = ({ children }) => {
     setUserState(null);
     await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
   }, []);
+
+  // Token recusado pelo servidor: volta para o login
+  useEffect(() => {
+    setUnauthorizedHandler(signOut);
+    return () => setUnauthorizedHandler(null);
+  }, [signOut]);
 
   const refreshUser = useCallback(async () => {
     try {

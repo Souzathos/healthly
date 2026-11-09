@@ -19,6 +19,14 @@ export class UserMapper {
             email: user.email
         }
     }
+
+    // Usuário em listas onde quem está vendo pode seguir direto, como a busca
+    static toListItem(user: User, isFollowing: boolean) {
+        return {
+            ...UserMapper.toPublic(user),
+            isFollowing
+        }
+    }
 }
 
 export type PublicUser = ReturnType<typeof UserMapper.toPublic>

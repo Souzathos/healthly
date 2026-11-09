@@ -20,6 +20,12 @@ export class PostController {
         return res.status(200).json(posts)
     }
 
+    async explore(req: Request, res: Response) {
+        const posts = await this.service.getExplore(getPagination(req, FEED_LIMIT), req.user!.id)
+
+        return res.status(200).json(posts)
+    }
+
     async getById(req: Request, res: Response) {
         const post = await this.service.getById(Number(req.params.id), req.user?.id)
 

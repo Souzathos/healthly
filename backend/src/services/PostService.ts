@@ -1,7 +1,7 @@
 import { In } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { CreatePostDTO, UpdatePostDTO } from "../dtos/post";
-import { NotFoundError } from "../errors";
+import { BadRequestError, NotFoundError } from "../errors";
 import { PostMapper } from "../mappers/PostMapper";
 import { Follow } from "../models/Follow";
 import { Like } from "../models/Like";
@@ -61,42 +61,47 @@ export class PostService {
         }))
     }
 
-    async create(data: CreatePostDTO, userId: number, files?: Express.Multer.File[]) {
+    private buildImages(files: Express.Multer.File[], post: Post) {
+        return files.map((file, index) => this.imageRepo.create({
+            data: file.buffer,
+            mimeType: file.mimetype,
+            position: index,
+            post
+        }))
+    }
+
+    async create(data: CreatePostDTO, userId: number, files: Express.Multer.File[] = []) {
+        if(!data.description?.trim() && files.length === 0) {
+            throw new BadRequestError('O post precisa de texto ou imagem')
+        }
+
         const user = await this.userRepo.findOneBy({id: userId})
         if(!user) throw new NotFoundError('Usuário não encontrado')
 
-        const savedPost = await this.repo.save(this.repo.create({description: data.description, user}))
+        // Post e imagens entram juntos: se uma imagem falhar, o post não fica pela metade
+        const postId = await AppDataSource.transaction(async manager => {
+            const post = await manager.save(this.repo.create({description: data.description, user}))
+            if(files.length > 0) await manager.save(this.buildImages(files, post))
+            return post.id
+        })
 
-        if (files && files.length > 0) {
-            const images = files.map((file, index) =>
-                this.imageRepo.create({
-                    data: file.buffer,
-                    mimeType: file.mimetype,
-                    position: index,
-                    post: savedPost
-                })
-            )
-            await this.imageRepo.save(images)
-        }
-
-        return this.getById(savedPost.id, userId)
+        return this.getById(postId, userId)
     }
 
-    async update(data: UpdatePostDTO, post: Post, files?: Express.Multer.File[]) {
-        if(files && files.length > 0) {
-            await this.imageRepo.delete({post: {id: post.id}})
-
-            const images = files.map((file, index) =>
-            this.imageRepo.create({
-                data: file.buffer,
-                mimeType: file.mimetype,
-                position: index,
-                post
-            }))
-            await this.imageRepo.save(images)
+    async update(data: UpdatePostDTO, post: Post, files: Express.Multer.File[] = []) {
+        if(data.description === undefined && files.length === 0) {
+            throw new BadRequestError('Envie um texto ou novas imagens')
         }
 
-        await this.repo.update({id: post.id}, {description: data.description})
+        await AppDataSource.transaction(async manager => {
+            if(files.length > 0) {
+                await manager.delete(PostMedia, {post: {id: post.id}})
+                await manager.save(this.buildImages(files, post))
+            }
+            if(data.description !== undefined) {
+                await manager.update(Post, {id: post.id}, {description: data.description})
+            }
+        })
 
         return this.getById(post.id, post.user.id)
     }
@@ -127,6 +132,17 @@ export class PostService {
             .getMany()
 
         return this.toResponses(posts, userId)
+    }
+
+    // Para você: posts de todo mundo, mais recentes primeiro
+    async getExplore({skip, take}: Pagination, viewerId?: number) {
+        const posts = await this.baseQuery()
+            .orderBy('post.createdAt', 'DESC')
+            .skip(skip)
+            .take(take)
+            .getMany()
+
+        return this.toResponses(posts, viewerId)
     }
 
     async getById(id: number, viewerId?: number) {
