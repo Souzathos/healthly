@@ -15,7 +15,7 @@ export const FormError = ({ message }) => {
         borderColor: "rgba(224,92,92,0.4)",
       }}
     >
-      <Icon name="x" size={16} color={colors.danger} />
+      <Icon name="x" size="sm" color={colors.danger} />
       <Text style={{ color: colors.danger, fontSize: 13, flex: 1 }}>
         {message}
       </Text>

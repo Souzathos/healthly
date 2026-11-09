@@ -9,7 +9,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Input } from "../components/Input";
-import { Icon } from "../components/Icon";
+import { Button } from "../components/Button";
+import { EmptyState } from "../components/EmptyState";
 import { Avatar } from "../components/Avatar";
 import { searchUsers, toggleFollow } from "../services/users";
 import { apiError } from "../services/api";
@@ -97,32 +98,31 @@ export const SearchPage = () => {
         </View>
       );
     }
-    const message = {
-      idle: "Encontre pessoas pelo nome ou @usuário.",
-      done: `Ninguém encontrado para "${q.trim()}".`,
-      error: "Não foi possível buscar agora. Tente de novo.",
-    }[status];
-
+    if (status === "error") {
+      return (
+        <EmptyState
+          icon="x"
+          message="Não foi possível buscar agora."
+          onRetry={() => runSearch(q.trim())}
+        />
+      );
+    }
     return (
-      <View className="py-16 items-center px-8">
-        <Icon name={status === "error" ? "x" : "search"} size={40} color="#333" />
-        <Text className="text-muted mt-3 text-center">{message}</Text>
-        {status === "error" ? (
-          <Pressable
-            onPress={() => runSearch(q.trim())}
-            className="mt-4 px-5 py-2.5 rounded-full border border-accent"
-          >
-            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
-          </Pressable>
-        ) : null}
-      </View>
+      <EmptyState
+        icon="search"
+        message={
+          status === "done"
+            ? `Ninguém encontrado para "${q.trim()}".`
+            : "Encontre pessoas pelo nome ou @usuário."
+        }
+      />
     );
   };
 
   const renderUser = ({ item }) => (
     <Pressable
       onPress={() => navigation.navigate("UserProfile", { userId: item.id })}
-      className="flex-row items-center justify-between px-4 py-3"
+      className="flex-row items-center justify-between gap-3 px-4 py-3"
     >
       <View className="flex-row items-center gap-3 flex-1">
         <Avatar user={item} size={46} />
@@ -130,46 +130,34 @@ export const SearchPage = () => {
           <Text className="text-white font-semibold text-sm" numberOfLines={1}>
             {item.name}
           </Text>
-          <Text className="text-[#555] text-xs" numberOfLines={1}>
+          <Text className="text-mutedDark text-xs" numberOfLines={1}>
             {handleFrom(item)}
             {item.goal ? ` · ${item.goal}` : ""}
           </Text>
         </View>
       </View>
-      <Pressable
+      <Button
+        label={item.isFollowing ? "Seguindo" : "Seguir"}
+        variant={item.isFollowing ? "ghost" : "outline"}
+        size="sm"
         onPress={() => onToggleFollow(item)}
         disabled={busyIds.has(item.id)}
-        className={`rounded-full px-4 py-2 border ${
-          item.isFollowing ? "bg-transparent border-[#333]" : "bg-surface2 border-accent"
-        }`}
-      >
-        <Text
-          className="text-[13px] font-semibold"
-          style={{ color: item.isFollowing ? "#fff" : colors.accent }}
-        >
-          {item.isFollowing ? "Seguindo" : "Seguir"}
-        </Text>
-      </Pressable>
+      />
     </Pressable>
   );
 
   return (
     <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
       <View className="px-4 pt-1 pb-3">
-        <View className="relative justify-center">
-          <View className="absolute left-4 z-10">
-            <Icon name="search" size={18} color="#555" />
-          </View>
-          <Input
-            placeholder="Buscar pessoas..."
-            value={q}
-            onChangeText={setQ}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            style={{ paddingLeft: 42 }}
-          />
-        </View>
+        <Input
+          placeholder="Buscar pessoas..."
+          leftIcon="search"
+          value={q}
+          onChangeText={setQ}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+        />
       </View>
 
       <FlatList

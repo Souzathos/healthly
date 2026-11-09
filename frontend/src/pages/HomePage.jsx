@@ -3,22 +3,21 @@ import {
   View,
   Text,
   FlatList,
-  Pressable,
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Logo } from "../components/Logo";
-import { Icon } from "../components/Icon";
-import { StoryRow } from "../components/StoryRow";
+import { EmptyState } from "../components/EmptyState";
+import { TabStrip } from "../components/TabStrip";
 import { PostCard } from "../components/PostCard";
 import { FEED_PAGE_SIZE, getExplore, getFeed } from "../services/posts";
 import { colors } from "../theme/colors";
 
 const TABS = [
-  ["foryou", "Para você"],
-  ["following", "Seguindo"],
+  { key: "foryou", label: "Para você" },
+  { key: "following", label: "Seguindo" },
 ];
 
 const LOADERS = {
@@ -107,45 +106,34 @@ export const HomePage = () => {
   const renderEmpty = () => {
     if (loading) {
       return (
-        <View className="py-20 items-center">
+        <View className="py-16 items-center">
           <ActivityIndicator color={colors.accent} />
         </View>
       );
     }
     if (error) {
       return (
-        <View className="py-20 items-center px-8">
-          <Icon name="x" size={40} color="#333" />
-          <Text className="text-muted mt-3 text-center">
-            Não foi possível carregar o feed.
-          </Text>
-          <Pressable onPress={retry} className="mt-4 px-5 py-2.5 rounded-full border border-accent">
-            <Text className="text-accent font-semibold text-sm">Tentar de novo</Text>
-          </Pressable>
-        </View>
+        <EmptyState icon="x" message="Não foi possível carregar o feed." onRetry={retry} />
       );
     }
     return (
-      <View className="py-20 items-center px-8">
-        <Icon name="home" size={40} color="#333" />
-        <Text className="text-muted mt-3 text-center">
-          {tab === "following"
+      <EmptyState
+        icon="home"
+        message={
+          tab === "following"
             ? "Siga pessoas para ver posts aqui. Encontre alguém na busca."
-            : "Nada por aqui ainda. Crie o primeiro post no botão +!"}
-        </Text>
-      </View>
+            : "Nada por aqui ainda. Crie o primeiro post no botão +!"
+        }
+      />
     );
   };
 
   return (
     <SafeAreaView className="flex-1 bg-dark" edges={["top"]}>
       {/* Header */}
-      <View className="px-5 pt-1 pb-1 flex-row items-center justify-between">
-        <View className="flex-row items-center gap-2">
-          <Logo size={30} />
-          <Text className="text-accent text-xl font-bold">Healthly</Text>
-        </View>
-        <Icon name="mail" size={24} color={colors.muted} />
+      <View className="h-12 px-4 flex-row items-center gap-2">
+        <Logo size={30} />
+        <Text className="text-accent text-xl font-bold">Healthly</Text>
       </View>
 
       <FlatList
@@ -172,34 +160,7 @@ export const HomePage = () => {
             tintColor={colors.accent}
           />
         }
-        ListHeaderComponent={
-          <View>
-            <StoryRow onAdd={() => navigation.navigate("Create")} />
-            <View className="flex-row border-b border-[#1a1a1a]">
-              {TABS.map(([key, label]) => (
-                <Pressable
-                  key={key}
-                  onPress={() => selectTab(key)}
-                  className="flex-1 py-3 items-center"
-                  style={{
-                    borderBottomWidth: 2,
-                    borderBottomColor: tab === key ? colors.accent : "transparent",
-                  }}
-                >
-                  <Text
-                    className="text-sm"
-                    style={{
-                      color: tab === key ? "#fff" : "#666",
-                      fontWeight: tab === key ? "600" : "400",
-                    }}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        }
+        ListHeaderComponent={<TabStrip tabs={TABS} value={tab} onChange={selectTab} />}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={
           loadingMore ? (

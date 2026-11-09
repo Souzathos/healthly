@@ -1,6 +1,7 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
+import { colors } from "../theme/colors";
 import { AuthStack } from "./AuthStack";
 import { AppTabs } from "./AppTabs";
 import { SplashPage } from "../pages/SplashPage";
@@ -22,7 +23,7 @@ export const RootNavigator = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#080808" },
+        contentStyle: { backgroundColor: colors.dark },
       }}
     >
       <Stack.Screen name="Tabs" component={AppTabs} />

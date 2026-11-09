@@ -1,10 +1,13 @@
 import React from "react";
 import Svg, { Path, Circle, Rect, Polyline, Polygon, Line } from "react-native-svg";
+import { colors, iconSizes } from "../theme/colors";
 
-export const Icon = ({ name, size = 24, color = "#ffffff", strokeWidth = 1.8 }) => {
+// size: "sm" | "md" | "lg" | "xl" (veja theme/tokens.js)
+export const Icon = ({ name, size = "lg", color = colors.text, strokeWidth = 1.8 }) => {
+  const pixels = iconSizes[size] ?? size;
   const common = {
-    width: size,
-    height: size,
+    width: pixels,
+    height: pixels,
     viewBox: "0 0 24 24",
   };
   const stroke = {
@@ -70,15 +73,6 @@ export const Icon = ({ name, size = 24, color = "#ffffff", strokeWidth = 1.8 }) 
           />
         </Svg>
       );
-    case "repeat":
-      return (
-        <Svg {...common}>
-          <Polyline {...stroke} points="17 1 21 5 17 9" />
-          <Path {...stroke} d="M3 11V9a4 4 0 014-4h14" />
-          <Polyline {...stroke} points="7 23 3 19 7 15" />
-          <Path {...stroke} d="M21 13v2a4 4 0 01-4 4H3" />
-        </Svg>
-      );
     case "comment":
       return (
         <Svg {...common}>
@@ -88,44 +82,10 @@ export const Icon = ({ name, size = 24, color = "#ffffff", strokeWidth = 1.8 }) 
           />
         </Svg>
       );
-    case "chart":
-      return (
-        <Svg {...common}>
-          <Polyline {...stroke} points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </Svg>
-      );
-    case "share":
-      return (
-        <Svg {...common}>
-          <Circle {...stroke} cx="18" cy="5" r="3" />
-          <Circle {...stroke} cx="6" cy="12" r="3" />
-          <Circle {...stroke} cx="18" cy="19" r="3" />
-          <Line {...stroke} x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-          <Line {...stroke} x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-        </Svg>
-      );
     case "back":
       return (
         <Svg {...common}>
           <Polyline {...stroke} points="15 18 9 12 15 6" />
-        </Svg>
-      );
-    case "more":
-      return (
-        <Svg {...common}>
-          <Circle fill={color} cx="5" cy="12" r="1.5" />
-          <Circle fill={color} cx="12" cy="12" r="1.5" />
-          <Circle fill={color} cx="19" cy="12" r="1.5" />
-        </Svg>
-      );
-    case "camera":
-      return (
-        <Svg {...common}>
-          <Path
-            {...stroke}
-            d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"
-          />
-          <Circle {...stroke} cx="12" cy="13" r="4" />
         </Svg>
       );
     case "image":
@@ -149,16 +109,6 @@ export const Icon = ({ name, size = 24, color = "#ffffff", strokeWidth = 1.8 }) 
           <Line {...stroke} strokeWidth={2.5} x1="6" y1="6" x2="18" y2="18" />
         </Svg>
       );
-    case "mail":
-      return (
-        <Svg {...common}>
-          <Path
-            {...stroke}
-            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-          />
-          <Polyline {...stroke} points="22 6 12 13 2 6" />
-        </Svg>
-      );
     case "eye":
       return (
         <Svg {...common}>
@@ -166,14 +116,11 @@ export const Icon = ({ name, size = 24, color = "#ffffff", strokeWidth = 1.8 }) 
           <Circle {...stroke} cx="12" cy="12" r="3" />
         </Svg>
       );
-    case "settings":
+    case "eyeOff":
       return (
         <Svg {...common}>
-          <Circle {...stroke} cx="12" cy="12" r="3" />
-          <Path
-            {...stroke}
-            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
-          />
+          <Path {...stroke} d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+          <Line {...stroke} x1="1" y1="1" x2="23" y2="23" />
         </Svg>
       );
     case "grid":
@@ -189,6 +136,12 @@ export const Icon = ({ name, size = 24, color = "#ffffff", strokeWidth = 1.8 }) 
       return (
         <Svg {...common}>
           <Path {...stroke} d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+        </Svg>
+      );
+    case "bookmarkFill":
+      return (
+        <Svg {...common}>
+          <Path {...stroke} fill={color} d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
         </Svg>
       );
     case "send":
@@ -217,6 +170,7 @@ export const Icon = ({ name, size = 24, color = "#ffffff", strokeWidth = 1.8 }) 
         </Svg>
       );
     default:
+      if (__DEV__) console.warn(`Icon: ícone "${name}" não existe`);
       return null;
   }
 };

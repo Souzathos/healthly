@@ -1,44 +1,49 @@
 import React from "react";
 import { View, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "../components/Icon";
 import { colors } from "../theme/colors";
 
 const ICONS = {
-  Home: "home",
-  Search: "search",
-  Notifications: "bell",
-  Profile: "user",
+  Home: { name: "home", label: "Início" },
+  Search: { name: "search", label: "Buscar" },
+  Notifications: { name: "bell", label: "Notificações" },
+  Profile: { name: "user", label: "Perfil" },
 };
+
+const ORDER = ["Home", "Search", "Create", "Notifications", "Profile"];
+// Área mínima no web e em aparelhos sem home indicator
+const BOTTOM_PADDING = 8;
 
 export const BottomTabBar = ({ state, navigation }) => {
   const stackNav = useNavigation();
-
-  const order = ["Home", "Search", "Create", "Notifications", "Profile"];
+  const insets = useSafeAreaInsets();
 
   return (
     <View
-      className="flex-row items-center justify-around bg-dark border-t border-[#1a1a1a]"
-      style={{ height: 82, paddingBottom: 18, paddingHorizontal: 8 }}
+      className="flex-row items-center justify-around bg-dark border-t border-divider pt-2 px-2"
+      style={{ paddingBottom: Math.max(insets.bottom, BOTTOM_PADDING) }}
     >
-      {order.map((routeName) => {
+      {ORDER.map((routeName) => {
         if (routeName === "Create") {
           return (
             <Pressable
               key="Create"
               onPress={() => stackNav.navigate("Create")}
-              className="items-center justify-center bg-accent"
+              accessibilityRole="button"
+              accessibilityLabel="Novo post"
+              className="w-12 h-12 items-center justify-center bg-accent active:opacity-90"
               style={{
-                width: 48,
-                height: 48,
                 borderRadius: 14,
                 shadowColor: colors.accent,
                 shadowOpacity: 0.3,
                 shadowRadius: 16,
                 shadowOffset: { width: 0, height: 4 },
+                elevation: 6,
               }}
             >
-              <Icon name="plus" size={24} color="#080808" />
+              <Icon name="plus" size="lg" color={colors.dark} />
             </Pressable>
           );
         }
@@ -59,12 +64,15 @@ export const BottomTabBar = ({ state, navigation }) => {
                 navigation.navigate(routeName);
               }
             }}
-            className="items-center justify-center px-3 py-2"
+            accessibilityRole="button"
+            accessibilityLabel={ICONS[routeName].label}
+            accessibilityState={{ selected: isFocused }}
+            className="w-12 h-12 items-center justify-center active:opacity-70"
           >
             <Icon
-              name={ICONS[routeName]}
-              size={24}
-              color={isFocused ? colors.accent : "#555"}
+              name={ICONS[routeName].name}
+              size="lg"
+              color={isFocused ? colors.accent : colors.mutedDark}
             />
           </Pressable>
         );
